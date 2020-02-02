@@ -48,4 +48,9 @@
     <select id="getCarReceiptsByStatusOfTH" resultType="carReceipts">
         select * from yd_sold_note.yd_receipts_car_receipts where receipts_status = #{i} and third_party_terrace_id = #{id}
     </select>
+
+    <!--  CarReceipts getCarReceiptsById(Integer id);  -->
+    <select id="getCarReceiptsById" resultType="carReceipts">
+        select * from yd_sold_note.yd_receipts_car_receipts where id = #{id}
+    </select>
 </mapper>

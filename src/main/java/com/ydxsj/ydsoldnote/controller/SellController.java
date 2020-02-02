@@ -127,18 +127,32 @@ public class SellController {
     public JSONObject addSellReceipts(@RequestBody Map map){
         System.err.println(map.toString());
         JSONObject jsonObject = new JSONObject();
-        try {
-            CarReceipts carReceipts = sellReceiptsService.addSellReceipts(map);
+        CarReceipts carReceipts = sellReceiptsService.addSellReceipts(map);
+        if (carReceipts != null){
             jsonObject.put("newCarReceipts",carReceipts);
             jsonObject.put("code",20000);
-            jsonObject.put("msg","添加成功");
-        } catch (Exception e){
+            jsonObject.put("message","添加成功");
+            return jsonObject;
+        } else {
             jsonObject.put("code",20001);
-            jsonObject.put("msg","添加失败");
+            jsonObject.put("message","添加失败");
+
+            return jsonObject;
         }
 
-        return jsonObject;
     }
 
+    @RequestMapping
+    public JSONObject reachCheck(@RequestBody Map map){
+        String token = (String) map.get("token");
+        String type = (String) map.get("type");
+        Integer id = (Integer) map.get("id");
+        System.err.println("token:"+token);
+        System.err.println("type:"+type);
+        System.err.println("id:"+id);
+        Integer result = sellReceiptsService.checkReceipts(token,type,id);
 
+
+        return null;
+    }
 }

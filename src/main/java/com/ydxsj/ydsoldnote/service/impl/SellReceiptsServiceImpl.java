@@ -59,18 +59,19 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
     public CarReceipts addSellReceipts(Map map) {
         Map data = (Map) map.get("temp");
         String token = (String) map.get("token");
+        System.err.println(map);
         double money = 0.0;
         double cashPledge = 0.0;
 
         CarReceipts carReceipts = new CarReceipts();
         // 根据token获取用户信息
         Integer userId = userTokenMapper.getUserIdByToken(token);
+        System.err.println("userId"+userId);
         // 获取平台信息
         User tpUser = userMapper.selectUserById((Integer) data.get("thirdParty"));
         // 添加单据信息
         carReceipts.setCreateTime(String.valueOf(System.currentTimeMillis()));
         carReceipts.setUserId(userId);
-//        String[] cityss = (String[]) data.get("city");
         List<String> city = (List<String>) data.get("city");
         carReceipts.setProvince(city.get(0));
         carReceipts.setCity(city.get(1));
@@ -114,11 +115,16 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
             gatheringMsg.setGatheringStatus(0);
             gatheringMsg.setGatheringUserId((Integer) data.get("thirdParty"));
         }
-        carReceipts.setGatheringMsgId(sellReceiptsMapper.insertGatheringMsg(gatheringMsg));
+        Integer integer = sellReceiptsMapper.insertGatheringMsg(gatheringMsg);
+        System.err.println("integer="+integer);
+        carReceipts.setGatheringMsgId(gatheringMsg.getId());
+        System.err.println("gatheringMsg="+gatheringMsg);
 
         // 插入报表数据
         Integer carReceiptsId = sellReceiptsMapper.insertCarReceiots(carReceipts);
-        carReceipts.setId(carReceiptsId);
+        if (carReceiptsId.equals("0") || carReceiptsId.equals(0)){
+            return null;
+        }
         carReceipts.setUser(userMapper.selectUserById(userId));
         carReceipts.setTpUser(tpUser);
         carReceipts.setTimeMsgs(getTimeMsg(carReceipts));
@@ -164,6 +170,27 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
         List<CarReceipts> carReceipts = sellReceiptsMapper.getCarReceiptsByStatusOfTH(3,user.getId());
         carReceipts = getCarreceipts(carReceipts);
         return carReceipts;
+    }
+
+    @Override
+    public Integer checkReceipts(String token, String type, Integer id) {
+        // 获取操作人用户信息
+        User user = userMapper.selectUserById(userTokenMapper.getUserIdByToken(token));
+        //获取该id单据
+        CarReceipts carReceipts = sellReceiptsMapper.getCarReceiptsById(id);
+        // 补全信息
+        if(user == null || carReceipts == null ){
+            return null;
+        }
+        if (type.equals("reachCheck") && carReceipts.getReceiptsStatus() == 2 && carReceipts.getReceiptsReachCheck().isEmpty()){
+            return null;
+        } else if (type.equals("gatheringCheck") && carReceipts.getGatheringMsg().getGatheringCheckTime().isEmpty()){
+            return null;
+        } else if (type.equals("installCheck") && carReceipts.getReceiptsStatus() == 3 && !carReceipts.getGatheringMsg().getGatheringCheckTime().isEmpty()){
+            return null;
+        } else {
+            return null;
+        }
     }
 
     /**

@@ -67,4 +67,11 @@ public interface SellReceiptsMapper {
      * @return
      */
     List<CarReceipts> getCarReceiptsByStatusOfTH(@Param("i") int i,@Param("id") Integer id);
+
+    /**
+     * 根据单据id获取单据
+     * @param id
+     * @return
+     */
+    CarReceipts getCarReceiptsById(@Param("id") Integer id);
 }

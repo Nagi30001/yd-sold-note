@@ -42,4 +42,13 @@ public interface SellReceiptsService {
      * @return
      */
     List<CarReceipts> getReceiptsByInstall(User user);
+
+    /**
+     * 审核单据
+     * @param token 审核人token
+     * @param type 审核类型
+     * @param id 单据id
+     * @return
+     */
+    Integer checkReceipts(String token, String type, Integer id);
 }
