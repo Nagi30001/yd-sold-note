@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ydxsj.ydsoldnote.mapper.UserTokenMapper">
+
+    <!--void insertToken(UserToken userToken);-->
+    <insert id="insertToken">
+        insert into yd_receipts_yd_user_token
+        (user_id,token,expire_time,update_time)
+        values
+        (#{userToken.userId},#{userToken.token},#{userToken.expireTime},#{userToken.updateTime})
+    </insert>
+
+    <!--  UserToken selectTokenByToken(String token);  -->
+    <select id="selectTokenByToken" resultType="userToken">
+        select * from yd_receipts_yd_user_token where token = #{token}
+    </select>
+
+    <!-- UserToken selectTokenById(Integer userId);   -->
+    <select id="selectTokenById" resultType="userToken">
+        select * from yd_receipts_yd_user_token where user_id = #{userId}
+    </select>
+
+    <!-- void updateUserToken(UserToken userToken);   -->
+    <update id="updateUserToken">
+        update yd_sold_note.yd_receipts_yd_user_token set token = #{userToken.token},expire_time = #{userToken.expireTime},update_time = #{userToken.updateTime} where user_id = #{userToken.userId}
+    </update>
+
+
+    <!-- Integer getUserIdByToken(String token);   -->
+    <select id="getUserIdByToken" resultType="java.lang.Integer">
+        select user_id from yd_sold_note.yd_receipts_yd_user_token where token = #{token}
+    </select>
+
+</mapper>

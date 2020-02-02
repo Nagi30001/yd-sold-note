@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ydxsj.ydsoldnote.mapper.UserMapper">
+
+    <!--User selectUserById(Integer userId);-->
+    <select id="selectUserById" resultType="user">
+        select * from yd_receipts_yd_user where id = #{userId}
+    </select>
+
+    <!-- User selectUserByJobName(String jobName);       -->
+    <select id="selectUserByJobName" resultType="user">
+        select * from yd_receipts_yd_user where job_num = #{jobName}
+    </select>
+
+    <!--  List<User> selectUserByRole(String role);  -->
+    <select id="selectUserByRole" resultType="user">
+        select * from yd_sold_note.yd_receipts_yd_user where role_num = #{role}
+    </select>
+</mapper>

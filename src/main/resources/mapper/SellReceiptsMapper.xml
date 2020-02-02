@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ydxsj.ydsoldnote.mapper.SellReceiptsMapper">
+
+    <!--  List<CarReceipts> getCarReceipts();   -->
+    <select id="getCarReceipts" resultType="carReceipts">
+        select * from yd_receipts_car_receipts
+    </select>
+
+    <!--  Integer insertGatheringMsg(GatheringMsg gatheringMsg);  -->
+    <insert id="insertGatheringMsg" useGeneratedKeys="true"  keyProperty="id" >
+        insert into yd_sold_note.yd_receipts_gathering_msg (yd_gathering, third_party_gathering, gathering_status, gathering_user_id)
+        values (#{gatheringMsg.ydGathering},#{gatheringMsg.thirdPartyGathering},#{gatheringMsg.gatheringStatus},#{gatheringMsg.gatheringUserId})
+    </insert>
+
+    <!--  Integer insertCarReceiots(@Param("carReceipts") CarReceipts carReceipts);  -->
+    <insert id="insertCarReceiots" useGeneratedKeys="true" keyProperty="id">
+        insert into yd_sold_note.yd_receipts_car_receipts
+        (receipts_status,create_time,user_id,province,city,client_name,client_car_num,client_phone,car_brand,count,sell_type_name,addition_type,third_party_terrace_id,
+        money,cash_pledge,predict_install_time,gathering_msg_id,gathering_type)
+        values
+        (#{carReceipts.receiptsStatus},#{carReceipts.createTime},#{carReceipts.userId},#{carReceipts.province},#{carReceipts.city},#{carReceipts.clientName},
+        #{carReceipts.clientCarNum},#{carReceipts.clientPhone},#{carReceipts.carBrand},#{carReceipts.count},#{carReceipts.sellTypeName},#{carReceipts.additionType},
+        #{carReceipts.thirdPartyTerraceId},#{carReceipts.money},#{carReceipts.cashPledge},#{carReceipts.predictInstallTime},#{carReceipts.gatheringMsgId},#{carReceipts.gatheringType})
+    </insert>
+
+    <!--  List<CarReceipts> getCarReceiptsByProvince(@Param("provinces") List<String> provinces);   -->
+    <select id="getCarReceiptsByProvince" resultType="carReceipts">
+        select * from yd_sold_note.yd_receipts_car_receipts where province in
+        <foreach collection="provinces" item="province" open="(" separator="," close=")" index="index" >
+            #{province}
+        </foreach>
+    </select>
+
+    <!--  GatheringMsg getGatheringMsgById(@Param("gatheringMsgId") Integer gatheringMsgId);  -->
+    <select id="getGatheringMsgById" resultType="gatheringMsg">
+        select * from yd_sold_note.yd_receipts_gathering_msg where id = #{gatheringMsgId}
+    </select>
+
+    <!-- List<CarReceipts> getCarReceiptsByStatus(int i);   -->
+    <select id="getCarReceiptsByStatus" resultType="carReceipts">
+        select * from yd_sold_note.yd_receipts_car_receipts where receipts_status = #{i}
+    </select>
+
+    <!--  List<CarReceipts> getCarReceiptsByStatusOfTH(int i, Integer id);  -->
+    <select id="getCarReceiptsByStatusOfTH" resultType="carReceipts">
+        select * from yd_sold_note.yd_receipts_car_receipts where receipts_status = #{i} and third_party_terrace_id = #{id}
+    </select>
+</mapper>
