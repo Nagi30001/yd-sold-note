@@ -1,10 +1,9 @@
 package com.ydxsj.ydsoldnote.service;
 
-import com.ydxsj.ydsoldnote.bean.data.Addition;
-import com.ydxsj.ydsoldnote.bean.data.CarType;
-import com.ydxsj.ydsoldnote.bean.data.SellType;
+import com.ydxsj.ydsoldnote.bean.data.*;
 
 import java.util.List;
+import java.util.Map;
 
 public interface DataManagementService {
 
@@ -25,4 +24,49 @@ public interface DataManagementService {
      * @return
      */
     List<Addition> getAdditions();
+
+
+    /**
+     * 获取渠道信息
+     * @param token
+     * @return
+     */
+    List<Channel> getChannelMsgs(String token);
+
+
+    /**
+     * 获取该用户权限省
+     * @param token
+     * @return
+     */
+    List<Province> getProvinces(String token);
+
+    /**
+     * 根据省份信息获取城市信息
+     * @param provinces
+     * @return
+     */
+    List<City> getCitysByProvinces(List<Province> provinces);
+
+    /**
+     * 添加渠道信息
+     * @param token
+     * @param channelMsg
+     * @return
+     */
+    Channel addChannelMsg(String token, Map channelMsg);
+
+    /**
+     * 更新渠道信息
+     * @param token
+     * @param channelMsg
+     * @return
+     */
+    Channel updateChannelMsg(String token, Map channelMsg);
+
+    /**
+     * 获取设备信息
+     * @return
+     */
+    List<EquipmentMsg> getEquipmentMsg();
 }

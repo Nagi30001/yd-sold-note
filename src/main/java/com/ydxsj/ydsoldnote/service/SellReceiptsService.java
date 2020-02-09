@@ -2,6 +2,7 @@ package com.ydxsj.ydsoldnote.service;
 
 import com.ydxsj.ydsoldnote.bean.CarReceipts;
 import com.ydxsj.ydsoldnote.bean.user.User;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -48,7 +49,17 @@ public interface SellReceiptsService {
      * @param token 审核人token
      * @param type 审核类型
      * @param id 单据id
+     * @param checkTime 确认时间
+     * @param map
      * @return
      */
-    Integer checkReceipts(String token, String type, Integer id);
+    Integer checkReceipts(String token, String type, Integer id, String checkTime, Map map);
+
+    /**
+     * 根据类型保存响应的图片/文件
+     * @param map
+     * @param file
+     * @return
+     */
+    boolean uploadFile(Map map, MultipartFile file);
 }

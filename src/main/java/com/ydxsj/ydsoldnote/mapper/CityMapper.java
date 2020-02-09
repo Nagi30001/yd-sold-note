@@ -44,4 +44,12 @@ public interface CityMapper {
      * @return
      */
     List<City> getCitysByProvinceId(@Param("id") Integer id);
+
+
+    /**
+     * 根据省份id获取城市信息
+     * @param provinceIds
+     * @return
+     */
+    List<City> getCitysByProvinceIds(@Param("provinceIds") List<String> provinceIds);
 }

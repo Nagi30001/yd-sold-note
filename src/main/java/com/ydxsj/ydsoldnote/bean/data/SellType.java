@@ -13,4 +13,5 @@ public class SellType {
     private String sellType;
     private Double money;
     private Double cashPledge;
+    private String explains;
 }

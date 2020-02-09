@@ -31,4 +31,34 @@
             #{additionId}
         </foreach>
     </select>
+
+    <!-- List<Channel> getChannelByProvince(@Param("provinces") List<String> provinces);   -->
+    <select id="getChannelByProvince" resultType="channel" >
+        select * from yd_sold_note.yd_receipts_channel where province in
+        <foreach collection="provinces" item="province" open="(" separator="," close=")" index="index" >
+            #{province}
+        </foreach>
+    </select>
+
+    <!-- Integer addChannel(@Param("channel") Channel channel);   -->
+    <insert id="addChannel" useGeneratedKeys="true" keyProperty="id">
+        insert into yd_sold_note.yd_receipts_channel (province, city, channel_name, site, status, create_id)
+        values (#{channel.province},#{channel.city},#{channel.channelName},#{channel.site},#{channel.status},#{channel.createId})
+    </insert>
+
+    <!-- Channel getChannelById(int id);   -->
+    <select id="getChannelById" resultType="channel">
+        select * from yd_sold_note.yd_receipts_channel where id = #{id}
+    </select>
+
+    <!--  Integer updateChannel(@Param("channel") Channel channel1);  -->
+    <select id="updateChannel">
+        update yd_sold_note.yd_receipts_channel set province = #{channel.province},city = #{channel.city},channel_name = #{channel.channelName},site = #{channel.site}
+        where id = #{channel.id}
+    </select>
+
+    <!--  List<EquipmentMsg> getEquipmentMsg();  -->
+    <select id="getEquipmentMsg" resultType="equipmentMsg">
+        select * from yd_sold_note.yd_receipts_equipment_msg
+    </select>
 </mapper>

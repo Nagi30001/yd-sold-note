@@ -19,6 +19,11 @@ spring:
   #控制台显示打印sql
   jpa:
     show-sql: true
+  servlet:
+#    设置下载上传文件最大大小限制
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
 #    #   配置监控统计拦截的filters，去掉后监控界面sql无法统计，'wall'用于防火墙
 #    filters: stat,wall,log4j
 #    maxPoolPreparedStatementPerConnectionSize: 20
@@ -45,3 +50,5 @@ logging:
   level:
     com:
       ydxsj: trace
+
+uploadDir: /Users/nagi30002/images/

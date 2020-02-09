@@ -3,6 +3,7 @@ package com.ydxsj.ydsoldnote.mapper;
 
 import com.ydxsj.ydsoldnote.bean.CarReceipts;
 import com.ydxsj.ydsoldnote.bean.GatheringMsg;
+import com.ydxsj.ydsoldnote.bean.ImageUrl;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -74,4 +75,29 @@ public interface SellReceiptsMapper {
      * @return
      */
     CarReceipts getCarReceiptsById(@Param("id") Integer id);
+
+    /**
+     * 更新单据时间
+     * @param carReceipts
+     * @param reachCheck
+     * @return
+     */
+    Integer updateCheckTime(@Param("carReceipts") CarReceipts carReceipts,@Param("type") String type);
+
+
+
+    /**
+     * 保存图片路径
+     * @param imageUrl
+     * @return
+     */
+    Integer insertImageUrl(@Param("imageUrl") ImageUrl imageUrl);
+
+
+    /**
+     * 更新收款信息
+     * @param gatheringMsg
+     * @return
+     */
+    Integer updateGatherimgMsg(@Param("gatheringMsg") GatheringMsg gatheringMsg);
 }

@@ -1,7 +1,9 @@
 package com.ydxsj.ydsoldnote.mapper;
 
+import com.ydxsj.ydsoldnote.bean.role.Role;
 import com.ydxsj.ydsoldnote.bean.user.User;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -29,4 +31,42 @@ public interface UserMapper {
      * @return
      */
     List<User> selectUserByRole(String role);
+
+    /**
+     * 根据用户省份
+     * @param provinces
+     * @param type
+     * @return
+     */
+    List<User> getUsersByProvince(@Param("provinces") List<String> provinces,@Param("type") String type);
+
+    /**
+     * 根据类型获取权限列表
+     * @param type
+     * @return
+     */
+    List<Role> getRoles(@Param("type") String type);
+
+    /**
+     * 检查工号是否存在
+     * @param jobNum
+     * @return
+     */
+    Integer selectUserByJobNum(@Param("jobNum") int jobNum);
+
+
+    /**
+     * 添加用户
+     * @param user
+     * @return
+     */
+    Integer insertUser(@Param("user") User user);
+
+
+    /**
+     * 更新用户信息
+     * @param user
+     * @return
+     */
+    Integer updateUser(@Param("user")User user);
 }

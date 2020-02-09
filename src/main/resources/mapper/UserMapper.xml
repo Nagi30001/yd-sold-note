@@ -18,4 +18,49 @@
     <select id="selectUserByRole" resultType="user">
         select * from yd_sold_note.yd_receipts_yd_user where role_num = #{role}
     </select>
+
+    <!--  List<User> getUsersByProvince(@Param("provinces") List<String> provinces,@Param("type") String type);  -->
+    <select id="getUsersByProvince" resultType="user">
+        select * from yd_sold_note.yd_receipts_yd_user where province in
+        <foreach collection="provinces" item="province" open="(" separator="," close=")" index="index" >
+            #{province}
+        </foreach>
+        and
+        <if test="type == 'yd'">
+             role_num != 'R1004'
+        </if>
+        <if test="type == 'pt'">
+             role_num = 'R1004'
+        </if>
+
+    </select>
+
+    <!--  List<Role> getRoles(@Param("type") String type);  -->
+    <select id="getRoles" resultType="role">
+        select * from yd_sold_note.yd_receipts_role
+        <where>
+            <if test="type == 'common' ">
+                role_num != 'R1001'
+            </if>
+        </where>
+    </select>
+
+    <!--  Integer selectUserByJobNum(@Param("jobNum") String jobNum);  -->
+    <select id="selectUserByJobNum"  resultType="java.lang.Integer">
+        select count(*) from yd_sold_note.yd_receipts_yd_user where job_num = #{jobNum}
+    </select>
+
+    <!--  Integer insertUser(@Param("user") User user);  -->
+    <insert id="insertUser" useGeneratedKeys="true" keyProperty="id" >
+        insert into yd_sold_note.yd_receipts_yd_user (job_num, job_password, user_name, phone, province, city, role_num, create_user, create_time, address, status, beProvince)
+        values (#{user.jobNum},#{user.jobPassword},#{user.userName},#{user.phone},#{user.province},#{user.city},#{user.roleNum},#{user.createUser},#{user.createTime},#{user.address},#{user.status},#{user.beProvince})
+    </insert>
+
+    <!--  Integer updateUser(@Param("user")User user);  -->
+    <update id="updateUser" useGeneratedKeys="true">
+        update yd_sold_note.yd_receipts_yd_user set
+        job_password = #{user.jobPassword},user_name = #{user.userName},phone = #{user.phone},province = #{user.province},city = #{user.city},role_num = #{user.roleNum},
+        address = #{user.address},beProvince = #{user.beProvince},status = #{user.status}
+        where job_num = #{user.jobNum}
+    </update>
 </mapper>

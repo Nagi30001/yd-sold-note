@@ -1,10 +1,12 @@
 package com.ydxsj.ydsoldnote.service;
 
 import com.ydxsj.ydsoldnote.bean.data.Province;
+import com.ydxsj.ydsoldnote.bean.role.Role;
 import com.ydxsj.ydsoldnote.bean.user.User;
 import com.ydxsj.ydsoldnote.bean.user.UserToken;
 
 import java.util.List;
+import java.util.Map;
 
 public interface UserService {
 
@@ -64,4 +66,43 @@ public interface UserService {
      * @return
      */
     List<String> getUserInfoByToken(String token);
+
+    /**
+     * 根据token获取权限内的 type类型用户
+     * @param token
+     * @param yd
+     * @return
+     */
+    List<User> getUsersByType(String token, String yd);
+
+    /**
+     * 判断用户是否超级管理员 是返回所有权限，否返回除超管理员外权限
+     * @param user
+     * @return
+     */
+    List<Role> getRolesBy(User user);
+
+    /**
+     * 添加用户
+     * @param token
+     * @param userMap
+     * @return
+     */
+    User addUser(String token, Map userMap);
+
+    /**
+     * 检查工号是否被占用
+     * @param value
+     * @return
+     */
+    boolean checkJobNum(String value);
+
+
+    /**
+     * 更新用户信息
+     * @param token
+     * @param userMap
+     * @return
+     */
+    boolean updateUser(String token, Map userMap);
 }

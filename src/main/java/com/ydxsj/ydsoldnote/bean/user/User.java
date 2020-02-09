@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * 用户
  */
@@ -19,9 +21,12 @@ public class User {
     private String province;
     private String city;
     private String roleNum;
-    private Long createTime;
-    private String createUser;
+    private String createTime;
+    private Integer createUser;
     private String address;
     private Integer status;
     private String beProvince;
+
+    private User user;
+    private List<Integer> beProvinces;
 }

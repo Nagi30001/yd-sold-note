@@ -53,9 +53,12 @@ public class ShiroConfig {
         filterMap.put("/druid/**", "anon");
         filterMap.put("/app/**", "anon");
         filterMap.put("/user/login", "anon");
-        filterMap.put("/**/**", "anon");
+        filterMap.put("/user/**", "oauth2");
+        filterMap.put("/sell/**", "oauth2");
+//        filterMap.put("/**/**", "anon");
         filterMap.put("/sell/**", "anon");
 //        filterMap.put("/**", "oauth2");
+        filterMap.put("/data/**","oauth2");
         shiroFilter.setFilterChainDefinitionMap(filterMap);
 
         return shiroFilter;

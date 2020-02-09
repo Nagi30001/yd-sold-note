@@ -2,9 +2,14 @@ package com.ydxsj.ydsoldnote.controller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.ydxsj.ydsoldnote.base.BaseResponse;
+import com.ydxsj.ydsoldnote.bean.data.City;
+import com.ydxsj.ydsoldnote.bean.data.Province;
+import com.ydxsj.ydsoldnote.bean.role.Role;
 import com.ydxsj.ydsoldnote.bean.user.User;
 import com.ydxsj.ydsoldnote.bean.user.UserToken;
+import com.ydxsj.ydsoldnote.service.DataManagementService;
 import com.ydxsj.ydsoldnote.service.UserService;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,11 +23,11 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+    @Autowired
+    private DataManagementService dataManagementService;
 
     /**
      * 登陆
-     * @param username
-     * @param password
      * @return
      */
     @RequestMapping("/user/login")
@@ -110,5 +115,129 @@ public class UserController {
     @RequiresPermissions("20001")
     public BaseResponse requirePermission() {
         return new BaseResponse(true, "You are visiting permission require update", null);
+    }
+
+    /**
+     * 登出请求
+     * @return
+     */
+    @RequestMapping("/user/logout")
+    public JSONObject logout(){
+        JSONObject jsonObject  =  new JSONObject();
+        jsonObject.put("code",20000);
+        return jsonObject;
+    }
+
+    @RequestMapping("/user/getUsers")
+    public JSONObject getUsers(String token){
+        JSONObject jsonObject  =  new JSONObject();
+        if (StringUtils.isEmpty(token)){
+            jsonObject.put("code",20001);
+            jsonObject.put("message","登陆失效，请重新登陆");
+            return jsonObject;
+        }
+        // 用户信息
+        User user = userService.getUserByToken(token);
+        if (user == null ){
+            jsonObject.put("code",20001);
+            jsonObject.put("message","登陆失效，请重新登陆");
+            return jsonObject;
+        }
+        // 获取yd用户
+        List<User> ydUsers = userService.getUsersByType(token,"yd");
+        // 获取平台用户
+        List<User> ptUsers = userService.getUsersByType(token,"pt");
+        // 获取用户省份信息
+        List<Province> provinces = dataManagementService.getProvinces(token);
+        // 获取用户城市信息
+        List<City> cities = dataManagementService.getCitysByProvinces(provinces);
+        // 权限信息
+        List<Role> roles = userService.getRolesBy(user);
+
+        jsonObject.put("roles",roles);
+        jsonObject.put("user",user);
+        jsonObject.put("ydUsers",ydUsers);
+        jsonObject.put("ptUsers",ptUsers);
+        jsonObject.put("provinces",provinces);
+        jsonObject.put("cities",cities);
+        jsonObject.put("code",20000);
+        jsonObject.put("message","获取成功用户信息");
+        return jsonObject;
+    }
+
+
+    /**
+     * 添加用户
+     * @param map
+     * @return
+     */
+    @RequestMapping("/user/addUser")
+    public JSONObject addUser(@RequestBody Map map){
+        JSONObject jsonObject = new JSONObject();
+        System.err.println(map);
+        String token = (String) map.get("token");
+        Map userMap = (Map) map.get("data");
+        User user = userService.addUser(token,userMap);
+        if (user == null){
+            jsonObject.put("code",20001);
+            jsonObject.put("message","添加失败");
+            return jsonObject;
+        } else {
+            jsonObject.put("user",user);
+            jsonObject.put("code",20000);
+            jsonObject.put("message","添加成功");
+            return jsonObject;
+        }
+    }
+
+    /**
+     * 检查工号是否被占用
+     * @param value
+     * @return
+     */
+    @RequestMapping("/user/checkJobNum")
+    public JSONObject checkJobNum(String value){
+        System.err.println(value);
+        JSONObject jsonObject = new JSONObject();
+        if (StringUtils.isEmpty(value)){
+            jsonObject.put("code",2000);
+
+            jsonObject.put("message","异常");
+            return jsonObject;
+        }
+        boolean row = userService.checkJobNum(value);
+        if (!row){
+            jsonObject.put("code",20000);
+            jsonObject.put("res","No");
+            return jsonObject;
+        } else {
+            jsonObject.put("code",20000);
+            return jsonObject;
+        }
+    }
+
+
+    /**
+     * 更新用户信息
+     * @param map
+     * @return
+     */
+    @RequestMapping("/user/updateUser")
+    public JSONObject updateUser(@RequestBody Map map){
+        JSONObject jsonObject = new JSONObject();
+
+        String token = (String) map.get("token");
+        Map userMap = (Map) map.get("data");
+        boolean row = userService.updateUser(token,userMap);
+        if (!row){
+            jsonObject.put("code",20001);
+            jsonObject.put("message","异常");
+            return jsonObject;
+        } else {
+            jsonObject.put("code",20000);
+            jsonObject.put("message","更新成功");
+            return jsonObject;
+        }
+
     }
 }

@@ -53,4 +53,34 @@
     <select id="getCarReceiptsById" resultType="carReceipts">
         select * from yd_sold_note.yd_receipts_car_receipts where id = #{id}
     </select>
+
+    <!-- Integer updateCheckTime(@Param("carReceipts") CarReceipts carReceipts,@Param("type") String type);  -->
+    <update id="updateCheckTime">
+        update yd_sold_note.yd_receipts_car_receipts
+        <set>
+            <if test="type == 'reachCheck' and carReceipts.receiptsReachCheck != null" >
+            receipts_reach_check = #{carReceipts.receiptsReachCheck},receipts_status = #{carReceipts.receiptsStatus}
+            </if>
+            <if test="type == 'installCheck' and carReceipts.third_party_check_time != null" >
+            third_party_check_time = #{carReceipts.thirdPartyCheckTime},receipts_status = #{carReceipts.receiptsStatus}
+            </if>
+            <if test="type == 'gatheringCheck' ">
+            receipts_status = #{carReceipts.receiptsStatus}
+            </if>
+        </set>
+        where id = #{carReceipts.id}
+    </update>
+
+    <!-- Integer insertImageUrl(@Param("imageUrl") ImageUrl imageUrl);  -->
+    <insert id="insertImageUrl" useGeneratedKeys="true" keyProperty="id">
+        insert into yd_sold_note.yd_receipts_image_url (msg_id, url) values (#{imageUrl.msgId},#{imageUrl.url})
+    </insert>
+
+    <!--  Integer updateGatherimgMsg(@Param("gatheringMsg") GatheringMsg gatheringMsg);  -->
+    <update id="updateGatherimgMsg" >
+        update yd_sold_note.yd_receipts_gathering_msg set
+        gathering_check_time = #{gatheringMsg.gatheringCheckTime},text = #{gatheringMsg.text} where id = #{gatheringMsg.id}
+    </update>
+
+
 </mapper>

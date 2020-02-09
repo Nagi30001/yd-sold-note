@@ -2,6 +2,7 @@ package com.ydxsj.ydsoldnote.service.impl;
 
 import com.ydxsj.ydsoldnote.bean.data.City;
 import com.ydxsj.ydsoldnote.bean.data.Province;
+import com.ydxsj.ydsoldnote.bean.role.Role;
 import com.ydxsj.ydsoldnote.bean.user.User;
 import com.ydxsj.ydsoldnote.bean.user.UserToken;
 import com.ydxsj.ydsoldnote.config.shiro.TokenGenerator;
@@ -9,11 +10,13 @@ import com.ydxsj.ydsoldnote.mapper.CityMapper;
 import com.ydxsj.ydsoldnote.mapper.UserMapper;
 import com.ydxsj.ydsoldnote.mapper.UserTokenMapper;
 import com.ydxsj.ydsoldnote.service.UserService;
+import com.ydxsj.ydsoldnote.service.UserUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -24,18 +27,21 @@ public class UserServiceImpl implements UserService {
     private UserTokenMapper userTokenMapper;
     @Autowired
     private CityMapper cityMapper;
+    @Autowired
+    private UserUtil userUtil;
 
+    private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
     //12小时后过期
     private final static int EXPIRE = 3600 * 12 * 1000;
 
-    public User getUserByJobName(String jobName){
-       User user = userMapper.selectUserByJobName(jobName);
-       return user;
+    public User getUserByJobName(String jobName) {
+        User user = userMapper.selectUserByJobName(jobName);
+        return user;
     }
 
     @Override
     public User getUserByToken(String token) {
-        System.err.println("token"+token);
+        System.err.println("token" + token);
         Integer userId = userTokenMapper.getUserIdByToken(token);
         User user = userMapper.selectUserById(userId);
         return user;
@@ -48,7 +54,7 @@ public class UserServiceImpl implements UserService {
         // 根据省份id获取名称
         List<Province> provinces = cityMapper.getProvinceByIds(provinceIds);
         // 根据省份id获取市对象
-        for (Province province : provinces ){
+        for (Province province : provinces) {
             List<City> cities = cityMapper.getCitysByProvinceId(province.getId());
             province.setCities(cities);
         }
@@ -69,6 +75,163 @@ public class UserServiceImpl implements UserService {
         List<String> roles = Arrays.asList(user.getRoleNum().split(","));
         return roles;
     }
+
+    @Override
+    public List<User> getUsersByType(String token, String type) {
+        List<String> provinces = userUtil.getProvinceByToken(token);
+        if (type.equals("yd")) {
+            List<User> users = userMapper.getUsersByProvince(provinces, type);
+            for (User user : users) {
+                user.setUser(userMapper.selectUserById(user.getCreateUser()));
+                List<String> p = Arrays.asList(user.getBeProvince().split("-"));
+                List<Integer> s = new ArrayList<>();
+                for (String str : p) {
+                    s.add(Integer.parseInt(str));
+                }
+                user.setBeProvinces(s);
+                if (!StringUtils.isEmpty(user.getCreateTime())) {
+                    user.setCreateTime(sdf.format(new Date(Long.parseLong(user.getCreateTime()))));
+                }
+            }
+            System.err.println(users);
+            return users;
+        } else if (type.equals("pt")) {
+            List<User> users = userMapper.getUsersByProvince(provinces, type);
+            for (User user : users) {
+                user.setUser(userMapper.selectUserById(user.getCreateUser()));
+                List<String> p = Arrays.asList(user.getBeProvince().split("-"));
+                List<Integer> s = new ArrayList<>();
+                for (String str : p) {
+                    s.add(Integer.parseInt(str));
+                }
+                user.setBeProvinces(s);
+                if (!StringUtils.isEmpty(user.getCreateTime())) {
+                    user.setCreateTime(sdf.format(new Date(Long.parseLong(user.getCreateTime()))));
+                }
+            }
+            return users;
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public List<Role> getRolesBy(User user) {
+        if (user != null && user.getRoleNum().indexOf("R1001") != -1) {
+            List<Role> roles = userMapper.getRoles("admin");
+            return roles;
+        } else {
+            List<Role> roles = userMapper.getRoles("common");
+            return roles;
+        }
+    }
+
+    @Override
+    public User addUser(String token, Map userMap) {
+        User createUser = userUtil.getUserByToken(token);
+        String jobNum = (String) userMap.get("jobNum");
+        String jobPassword = (String) userMap.get("jobPassword");
+        String userName = (String) userMap.get("userName");
+        String phone = (String) userMap.get("phone");
+        String province = (String) userMap.get("province");
+        String city = (String) userMap.get("city");
+        String roleNum = (String) userMap.get("roleNum");
+        String address = (String) userMap.get("roleNum");
+        List<String> beProvince = (List<String>) userMap.get("beProvince");
+        if (StringUtils.isEmpty(jobNum) && StringUtils.isEmpty(jobPassword) && StringUtils.isEmpty(userName) &&
+                StringUtils.isEmpty(phone) && StringUtils.isEmpty(province) && StringUtils.isEmpty(city) &&
+                StringUtils.isEmpty(city) && StringUtils.isEmpty(roleNum) && StringUtils.isEmpty(address) && beProvince.size() < 1) {
+            return null;
+        }
+        User user = new User();
+        //检查工号是否被占用
+        Integer row = userMapper.selectUserByJobNum(Integer.parseInt(jobNum));
+        System.err.println(row);
+        if (row > 0) {
+            return null;
+        }
+        user.setJobNum(Integer.valueOf(jobNum));
+        user.setJobPassword(String.valueOf(userMap.get("jobPassword")));
+        user.setUserName(userName.trim());
+        user.setPhone(phone.trim());
+        user.setProvince(province.trim());
+        user.setCity(city.trim());
+        user.setRoleNum(roleNum.trim());
+        user.setAddress(address);
+        user.setBeProvince(StringUtils.join(beProvince, "-"));
+        user.setCreateUser(createUser.getId());
+        user.setCreateTime(String.valueOf(System.currentTimeMillis()));
+        user.setStatus(1);
+
+        Integer i = userMapper.insertUser(user);
+        if (i < 0) {
+            return null;
+        }
+        return user;
+    }
+
+    @Override
+    public boolean updateUser(String token, Map userMap) {
+        System.err.println(token);
+        System.err.println(userMap);
+        if (StringUtils.isEmpty(token)) {
+            return false;
+        }
+        Boolean status1 = (Boolean) userMap.get("status1");
+        String jobNum = String.valueOf(userMap.get("jobNum"));
+        String jobPassword = (String) userMap.get("jobPassword");
+        String userName = (String) userMap.get("userName");
+        String phone = (String) userMap.get("phone");
+        String province = (String) userMap.get("province");
+        String city = (String) userMap.get("city");
+        String roleNum = (String) userMap.get("roleNum");
+        String address = (String) userMap.get("address");
+        List<String> beProvince = (List<String>) userMap.get("beProvince");
+        if (StringUtils.isEmpty(jobNum) && StringUtils.isEmpty(jobPassword) && StringUtils.isEmpty(userName) &&
+                StringUtils.isEmpty(phone) && StringUtils.isEmpty(province) && StringUtils.isEmpty(city) &&
+                StringUtils.isEmpty(city) && StringUtils.isEmpty(roleNum) && StringUtils.isEmpty(address) && beProvince.size() < 1) {
+            return false;
+        }
+        User user = new User();
+        //检查工号是否存在
+        Integer row = userMapper.selectUserByJobNum(Integer.parseInt(jobNum));
+        if (row != 1) {
+            return false;
+        }
+        user.setJobNum(Integer.valueOf(jobNum));
+        user.setJobPassword(String.valueOf(userMap.get("jobPassword")));
+        user.setUserName(userName.trim());
+        user.setPhone(phone.trim());
+        user.setProvince(province.trim());
+        user.setCity(city.trim());
+        user.setRoleNum(roleNum.trim());
+        user.setAddress(address);
+        user.setBeProvince(StringUtils.join(beProvince, "-"));
+        user.setCreateTime(String.valueOf(System.currentTimeMillis()));
+        if (status1) {
+            user.setStatus(1);
+        } else {
+            user.setStatus(0);
+        }
+        Integer i = userMapper.updateUser(user);
+        if (i < 1) {
+            return false;
+        } else {
+            return true;
+        }
+
+    }
+
+    @Override
+    public boolean checkJobNum(String value) {
+
+        Integer row = userMapper.selectUserByJobNum(Integer.parseInt(value));
+        if (row > 0) {
+            return false;
+        }
+        return true;
+    }
+
 
     @Override
     public User getUserById(Integer userId) {
@@ -92,7 +255,7 @@ public class UserServiceImpl implements UserService {
 //       查询token表中是否有该id的token信息
         UserToken userToken1 = userTokenMapper.selectTokenById(userId);
 //       没有
-        if (userToken1 == null){
+        if (userToken1 == null) {
             // 将token信息插入数据库
             userTokenMapper.insertToken(userToken);
             return userToken;
@@ -111,4 +274,6 @@ public class UserServiceImpl implements UserService {
         UserToken userToken = userTokenMapper.selectTokenByToken(token);
         return userToken;
     }
+
+
 }

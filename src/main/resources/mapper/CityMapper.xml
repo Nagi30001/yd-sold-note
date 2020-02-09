@@ -29,9 +29,20 @@
             #{provincesId}
         </foreach>
     </select>
+
     <!--  List<City> getCitysByProvinceId(@Param("id") Integer id);  -->
     <select id="getCitysByProvinceId" resultType="city">
         select * from yd_sold_note.yd_receipts_city where province_id = #{id}
     </select>
+
+    <!--  List<City> getCitysByProvinceIds(@Param("provinceIds")List<String> provinceIds);  -->
+    <select id="getCitysByProvinceIds" resultType="city">
+        select * from yd_sold_note.yd_receipts_city where province_id in
+        <foreach collection="provinceIds" item="provincesId" open="(" separator="," close=")" index="index" >
+            #{provincesId}
+        </foreach>
+    </select>
+
+
 
 </mapper>
