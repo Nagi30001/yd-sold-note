@@ -1,6 +1,8 @@
 package com.ydxsj.ydsoldnote.service;
 
 import com.ydxsj.ydsoldnote.bean.data.*;
+import com.ydxsj.ydsoldnote.bean.data.equipment.*;
+import com.ydxsj.ydsoldnote.bean.user.User;
 
 import java.util.List;
 import java.util.Map;
@@ -69,4 +71,51 @@ public interface DataManagementService {
      * @return
      */
     List<EquipmentMsg> getEquipmentMsg();
+
+    /**
+     * 根据type获取不同的库存信息
+     * @param
+     * @return
+     */
+    List<InventoryMsg> getInventoryMsgByTPId(User user, String type);
+
+    /**
+     * 根据type获取平台转移信息
+     * @param
+     * @return
+     */
+    List<TransferMsg> getTransferMsgById(User user, String type);
+
+
+    /**
+     * 根据type获取更换设备信息
+     * @param user
+     * @param type
+     * @return
+     */
+    List<ChangeMsg> getChangeMsgByTPId(User user, String type);
+
+    /**
+     * 获取维修信息
+     * @param user
+     * @param type
+     * @return
+     */
+    List<MaintainMsg> getMaintainMsg(User user, String type);
+
+    /**
+     * 获取采购信息
+     * @param user
+     * @param type
+     * @return
+     */
+    List<PurchaseMsg> getPurchaseMsg(User user, String type);
+
+    /**
+     * 获取报废信息
+     * @param user
+     * @param type
+     * @return
+     */
+    List<ScrapMsg> getScrapMsg(User user, String type);
 }

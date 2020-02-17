@@ -4,6 +4,7 @@ import com.ydxsj.ydsoldnote.bean.CarReceipts;
 import com.ydxsj.ydsoldnote.bean.user.User;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
 
@@ -62,4 +63,27 @@ public interface SellReceiptsService {
      * @return
      */
     boolean uploadFile(Map map, MultipartFile file);
+
+
+    /**
+     * 销售获取我的报单，平台获取平台的报单
+     * @param token
+     * @return
+     */
+    List<CarReceipts> getMyReceipts(String token);
+
+
+    /**
+     * 作废该单据
+     * @param id
+     * @return
+     */
+    boolean cancellationCarReceiptsById(String token , Integer id);
+
+    /**
+     * 根据条件查询单据
+     * @param map
+     * @return
+     */
+    List<CarReceipts> searchQueryDate(Map map) throws ParseException;
 }

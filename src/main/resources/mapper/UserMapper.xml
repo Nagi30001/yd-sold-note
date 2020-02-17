@@ -25,12 +25,11 @@
         <foreach collection="provinces" item="province" open="(" separator="," close=")" index="index" >
             #{province}
         </foreach>
-        and
         <if test="type == 'yd'">
-             role_num != 'R1004'
+            and  role_num != 'R1004'
         </if>
         <if test="type == 'pt'">
-             role_num = 'R1004'
+            and  role_num = 'R1004'
         </if>
 
     </select>
@@ -63,4 +62,9 @@
         address = #{user.address},beProvince = #{user.beProvince},status = #{user.status}
         where job_num = #{user.jobNum}
     </update>
+
+    <!-- List<User> getUserByLikeUserName(String sellName);  -->
+    <select id="getUserByLikeUserName" resultType="user">
+        select * from yd_sold_note.yd_receipts_yd_user where user_name like #{sellName}
+    </select>
 </mapper>

@@ -47,6 +47,7 @@ public class CarReceipts {
     private Integer channelId;
     private String gatheringType;
     private Integer gatheringMsgId;
+    private String cancellationTime;
 
     // 其他数据
     //收款信息数据
@@ -57,4 +58,6 @@ public class CarReceipts {
     private User user;
     // 时间集合
     private List<TimeMsg> timeMsgs;
+    // 收款图片地址集合
+    private List<ImageUrl> imageUrls;
 }

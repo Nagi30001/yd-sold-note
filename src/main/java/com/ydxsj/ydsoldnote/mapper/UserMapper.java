@@ -69,4 +69,12 @@ public interface UserMapper {
      * @return
      */
     Integer updateUser(@Param("user")User user);
+
+
+    /**
+     * 根据用户名获取用户信息
+     * @param sellName
+     * @return
+     */
+    List<User> getUserByLikeUserName(String sellName);
 }

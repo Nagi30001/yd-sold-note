@@ -32,6 +32,7 @@
         <foreach collection="provinces" item="province" open="(" separator="," close=")" index="index" >
             #{province}
         </foreach>
+        order by create_time desc
     </select>
 
     <!--  GatheringMsg getGatheringMsgById(@Param("gatheringMsgId") Integer gatheringMsgId);  -->
@@ -39,9 +40,9 @@
         select * from yd_sold_note.yd_receipts_gathering_msg where id = #{gatheringMsgId}
     </select>
 
-    <!-- List<CarReceipts> getCarReceiptsByStatus(int i);   -->
+    <!-- List<CarReceipts> getCarReceiptsByStatus(@Param("i") int i,@Param("id") Integer id);   -->
     <select id="getCarReceiptsByStatus" resultType="carReceipts">
-        select * from yd_sold_note.yd_receipts_car_receipts where receipts_status = #{i}
+        select * from yd_sold_note.yd_receipts_car_receipts where receipts_status &lt;= #{i} and user_id = #{id}
     </select>
 
     <!--  List<CarReceipts> getCarReceiptsByStatusOfTH(int i, Integer id);  -->
@@ -81,6 +82,55 @@
         update yd_sold_note.yd_receipts_gathering_msg set
         gathering_check_time = #{gatheringMsg.gatheringCheckTime},text = #{gatheringMsg.text} where id = #{gatheringMsg.id}
     </update>
+
+    <!-- List<CarReceipts> getCarReceiptsByTPId(@Param("id") Integer id);   -->
+    <select id="getCarReceiptsByTPId" resultType="carReceipts">
+        select * from yd_sold_note.yd_receipts_car_receipts where third_party_terrace_id = #{id} order by create_time desc
+    </select>
+
+    <!--  List<CarReceipts> getCarReceiptsByCreateId(@Param("id")Integer id);  -->
+    <select id="getCarReceiptsByCreateId" resultType="carReceipts">
+        select * from yd_sold_note.yd_receipts_car_receipts where user_id = #{id} order by create_time desc
+    </select>
+
+    <!--  Integer updateCarReceiptsStatus(@Param("carReceipts") CarReceipts carReceipts);  -->
+    <update id="updateCarReceiptsStatus" useGeneratedKeys="true">
+        update yd_sold_note.yd_receipts_car_receipts set
+        receipts_status = #{carReceipts.receiptsStatus} , cancellation_time = #{carReceipts.cancellationTime} where id = #{carReceipts.id}
+    </update>
+
+    <!--  List<ImageUrl> getImageUrls(@Param("id") Integer id);  -->
+    <select id="getImageUrls" resultType="imageUrl">
+        select * from yd_sold_note.yd_receipts_image_url where msg_id = #{id}
+    </select>
+
+    <!--     List<CarReceipts> searchCarReceipts(@Param("users") List<User> users, @Param("tpId") Integer tpId, @Param("startingDate") String startingDate, @Param("endDay") String endDay, @Param("clientName") String clientName, @Param("clientCarNum") String clientCarNum);  -->
+    <select id="searchCarReceipts" resultType="carReceipts">
+        select * from yd_sold_note.yd_receipts_car_receipts
+        <where>
+            <if test="users != null">
+                user_id in
+                <foreach collection="users" item="user" open="(" separator="," close=")" index="index" >
+                    #{user.id}
+                </foreach>
+            </if>
+            <if test="tpId != null and tpId != '' ">
+                and third_party_terrace_id = #{tpId}
+            </if>
+            <if test="startingDate != null and startingDate != '' ">
+                and create_time &gt; #{startingDate}
+            </if>
+            <if test="endDay != null and endDay != '' ">
+                and create_time &lt; #{endDay}
+            </if>
+            <if test="clientName != null and clientName != ''">
+                and client_name = #{clientName}
+            </if>
+            <if test="clientCarNum != null and clientCarNum != ''">
+                and client_car_num = #{clientCarNum}
+            </if>
+        </where>
+    </select>
 
 
 </mapper>

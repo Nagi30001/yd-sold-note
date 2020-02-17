@@ -13,7 +13,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
@@ -36,20 +39,25 @@ public class UserController {
         String password = (String) map.get("password");
         System.err.println("用户名："+username+"------密码："+password);
         JSONObject json = new JSONObject();
-        json.put("result", false);
-        json.put("message", "账号或密码不正确");
+
 
         // 用户信息
 //        ManagerInfo managerInfo = managerService.getManagerInfo(username);
         User user = userService.getUserByJobName(username);
         // 账号不存在、密码错误
         if (user == null || !user.getJobPassword().equals(password)) {
+            json.put("code", 20001);
+            json.put("message", "账号或密码不正确");
+            return json;
+        }
+        if (user.getStatus() != 1){
+            json.put("code", 20001);
+            json.put("message", "账号已被禁用,请联系管理员");
             return json;
         }
 
         UserToken userToken = userService.saveToken(user.getId());
         json.put("token", userToken.getToken());
-        json.put("result", true);
         json.put("message", "登陆成功");
         json.put("code", 20000);
 

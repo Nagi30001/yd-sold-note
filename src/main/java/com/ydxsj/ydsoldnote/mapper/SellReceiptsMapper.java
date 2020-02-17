@@ -4,6 +4,7 @@ package com.ydxsj.ydsoldnote.mapper;
 import com.ydxsj.ydsoldnote.bean.CarReceipts;
 import com.ydxsj.ydsoldnote.bean.GatheringMsg;
 import com.ydxsj.ydsoldnote.bean.ImageUrl;
+import com.ydxsj.ydsoldnote.bean.user.User;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -57,9 +58,10 @@ public interface SellReceiptsMapper {
     /**
      * 获取某状态的单据
      * @param i
+     * @param id
      * @return
      */
-    List<CarReceipts> getCarReceiptsByStatus(int i);
+    List<CarReceipts> getCarReceiptsByStatus(@Param("i") int i,@Param("id") Integer id);
 
     /**
      * 获取某状态的单据 平台用户的
@@ -79,7 +81,6 @@ public interface SellReceiptsMapper {
     /**
      * 更新单据时间
      * @param carReceipts
-     * @param reachCheck
      * @return
      */
     Integer updateCheckTime(@Param("carReceipts") CarReceipts carReceipts,@Param("type") String type);
@@ -100,4 +101,46 @@ public interface SellReceiptsMapper {
      * @return
      */
     Integer updateGatherimgMsg(@Param("gatheringMsg") GatheringMsg gatheringMsg);
+
+    /**
+     * 根据平台ID获取该平台单据
+     * @param id
+     * @return
+     */
+    List<CarReceipts> getCarReceiptsByTPId(@Param("id") Integer id);
+
+
+    /**
+     * 根据用户ID查询该ID创建的单据
+     * @param id
+     * @return
+     */
+    List<CarReceipts> getCarReceiptsByCreateId(@Param("id")Integer id);
+
+    /**
+     * 更新状态及作废时间
+     * @param carReceipts
+     * @return
+     */
+    Integer updateCarReceiptsStatus(@Param("carReceipts") CarReceipts carReceipts);
+
+    /**
+     * 根据单据ID获取图片对象集合
+     * @param id
+     * @return
+     */
+    List<ImageUrl> getImageUrls(@Param("id") Integer id);
+
+
+    /**
+     * 根据条件查询相关单据
+     * @param users 用户信息集合
+     * @param tpId 平台id
+     * @param startingDate 开始日期
+     * @param endDay    结束日期
+     * @param clientName 客户姓名
+     * @param clientCarNum 客户车牌号
+     * @return
+     */
+    List<CarReceipts> searchCarReceipts(@Param("users") List<User> users, @Param("tpId") String tpId, @Param("startingDate") String startingDate, @Param("endDay") String endDay, @Param("clientName") String clientName, @Param("clientCarNum") String clientCarNum);
 }

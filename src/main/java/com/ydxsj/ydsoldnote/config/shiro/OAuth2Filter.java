@@ -97,11 +97,11 @@ public class OAuth2Filter extends AuthenticatingFilter {
     private String getRequestToken(HttpServletRequest httpRequest){
         System.err.println("请求到getRequestToken");
         //从header中获取token
-        String token = httpRequest.getHeader("token");
+        String token = httpRequest.getHeader("X-Token");
 
         //如果header中不存在token，则从参数中获取token
         if(StringUtils.isBlank(token)){
-            token = httpRequest.getParameter("token");
+            token = httpRequest.getParameter("X-Token");
         }
 
         return token;

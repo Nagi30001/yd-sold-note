@@ -92,6 +92,7 @@ public class UserServiceImpl implements UserService {
                 if (!StringUtils.isEmpty(user.getCreateTime())) {
                     user.setCreateTime(sdf.format(new Date(Long.parseLong(user.getCreateTime()))));
                 }
+                user.setRoles(Arrays.asList(user.getRoleNum().split(",")));
             }
             System.err.println(users);
             return users;
@@ -108,6 +109,7 @@ public class UserServiceImpl implements UserService {
                 if (!StringUtils.isEmpty(user.getCreateTime())) {
                     user.setCreateTime(sdf.format(new Date(Long.parseLong(user.getCreateTime()))));
                 }
+                user.setRoles(Arrays.asList(user.getRoleNum().split(",")));
             }
             return users;
         } else {
@@ -136,7 +138,7 @@ public class UserServiceImpl implements UserService {
         String province = (String) userMap.get("province");
         String city = (String) userMap.get("city");
         String roleNum = (String) userMap.get("roleNum");
-        String address = (String) userMap.get("roleNum");
+        String address = (String) userMap.get("address");
         List<String> beProvince = (List<String>) userMap.get("beProvince");
         if (StringUtils.isEmpty(jobNum) && StringUtils.isEmpty(jobPassword) && StringUtils.isEmpty(userName) &&
                 StringUtils.isEmpty(phone) && StringUtils.isEmpty(province) && StringUtils.isEmpty(city) &&
@@ -167,6 +169,7 @@ public class UserServiceImpl implements UserService {
         if (i < 0) {
             return null;
         }
+        user.setCreateTime(sdf.format(new Date(Long.parseLong(user.getCreateTime()))));
         return user;
     }
 

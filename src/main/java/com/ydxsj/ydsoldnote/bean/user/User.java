@@ -29,4 +29,5 @@ public class User {
 
     private User user;
     private List<Integer> beProvinces;
+    private List<String> roles;
 }

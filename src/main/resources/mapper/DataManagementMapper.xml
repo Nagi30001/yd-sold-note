@@ -61,4 +61,90 @@
     <select id="getEquipmentMsg" resultType="equipmentMsg">
         select * from yd_sold_note.yd_receipts_equipment_msg
     </select>
+
+    <!--  List<InventoryMsg> getInventoryMsgByTPId(@Param("id") Integer id);  -->
+    <select id="getInventoryMsgByTPId" resultType="inventoryMsg">
+        select * from yd_sold_note.yd_receipts_equipment_inventory where third_party_terrace_id = #{id}
+    </select>
+
+    <!--  EquipmentMsg getEquipmentMsgById(@Param("id") Integer equipmentMsgId);  -->
+    <select id="getEquipmentMsgById" resultType="equipmentMsg">
+        select * from yd_sold_note.yd_receipts_equipment_msg where id = #{id}
+    </select>
+
+    <!--  List<InventoryMsg> getInventoryMsgByListIds(@Param("ids") List<Integer> ids);  -->
+    <select id="getInventoryMsgByListIds" resultType="inventoryMsg">
+        select * from yd_sold_note.yd_receipts_equipment_inventory where third_party_terrace_id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")" index="index">
+            #{id}
+        </foreach>
+    </select>
+
+    <!--  List<TransferMsg> getTransferMsgByTPId(@Param("id") Integer id);  -->
+    <select id="getTransferMsgByTPId" resultType="transferMsg">
+        select * from yd_sold_note.yd_receipts_equipment_transfer_msg where request_user_id = #{id} or consignee_user_id = #{id}
+    </select>
+
+    <!--  List<TransferMsg> getTransferMsgByIds(@Param("ids")List<Integer> ids);  -->
+    <select id="getTransferMsgByIds" resultType="transferMsg">
+        select * from yd_sold_note.yd_receipts_equipment_transfer_msg where request_user_id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")" index="index">
+            #{id}
+        </foreach>
+        or consignee_user_id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")" index="index">
+            #{id}
+        </foreach>
+    </select>
+
+    <!--  List<ChangeMsg> getChangeMsgById(@Param("id")Integer id);  -->
+    <select id="getChangeMsgById" resultType="changeMsg">
+        select * from yd_sold_note.yd_receipts_equipment_change_msg where third_party_terrace_id = #{id}
+    </select>
+
+    <!--  List<ChangeMsg> getChangeMsgByIds(@Param("ids")List<Integer> ids);  -->
+    <select id="getChangeMsgByIds" resultType="changeMsg">
+        select * from yd_sold_note.yd_receipts_equipment_change_msg where third_party_terrace_id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")" index="index">
+            #{id}
+        </foreach>
+<!--        or check_user_id in-->
+<!--        <foreach collection="ids" item="id" open="(" separator="," close=")" index="index">-->
+<!--            #{id}-->
+<!--        </foreach>-->
+    </select>
+
+    <!--  List<MaintainMsg> getMaintainMsgByIds(List<Integer> ids);  -->
+    <select id="getMaintainMsgByIds" resultType="maintainMsg">
+        select * from yd_sold_note.yd_receipts_equipment_maintain_msg where request_user_id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")" index="index">
+            #{id}
+        </foreach>
+<!--        or consignee_user_id in-->
+<!--        <foreach collection="ids" item="id" open="{" separator="," close=")" index="index">-->
+<!--            #{id}-->
+<!--        </foreach>-->
+    </select>
+
+    <!--  List<PurchaseMsg> getPurchaseMsgByIds(@Param("ids")List<Integer> ids);  -->
+    <select id="getPurchaseMsgByIds" resultType="purchaseMsg">
+        select * from yd_sold_note.yd_receipts_equipment_purchase_msg where purchase_user_id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")" index="index">
+            #{id}
+        </foreach>
+<!--        or consignee_user_id in-->
+<!--        <foreach collection="ids" item="id" open="{" separator="," close=")" index="index">-->
+<!--            #{id}-->
+<!--        </foreach>-->
+    </select>
+
+    <!--  List<ScrapMsg> getScrapMsgByIds(@Param("ids")List<Integer> ids);  -->
+    <select id="getScrapMsgByIds" resultType="scrapMsg">
+        select * from yd_sold_note.yd_receipts_equipment_scrap_msg where request_user_id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")" index="index">
+            #{id}
+        </foreach>
+    </select>
+
+
 </mapper>

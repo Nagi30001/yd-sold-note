@@ -1,4 +1,4 @@
-package com.ydxsj.ydsoldnote.bean.data;
+package com.ydxsj.ydsoldnote.bean.data.equipment;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

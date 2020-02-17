@@ -8,6 +8,7 @@ import com.ydxsj.ydsoldnote.mapper.UserTokenMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -57,6 +58,33 @@ public class  UserUtil {
         return provinces;
 
     }
+
+    /**
+     * 根据用户信息获取省份权限集合
+     * @return
+     */
+    public  List<String> getProvinceByUser(User user){
+        List<String> provinceIds = Arrays.asList(user.getBeProvince().split("-"));
+        List<String> provinces = cityMapper.getProvinceById(provinceIds);
+        return provinces;
+    }
+
+
+    /**
+     * 根据用户信息获取省份权限集合,在获得该区域内所有用户的id集合
+     * @return
+     */
+    public  List<String> getIds(User user){
+        List<String> provinceByUser = getProvinceByUser(user);
+        List<User> users = userMapper.getUsersByProvince(provinceByUser,"");
+        List<String> ids = new ArrayList<>();
+        for (User user1: users){
+            ids.add(String.valueOf(user1.getId()));
+        }
+        return ids;
+    }
+
+
 
 
 

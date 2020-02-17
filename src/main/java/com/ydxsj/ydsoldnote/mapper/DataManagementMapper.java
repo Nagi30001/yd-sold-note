@@ -1,6 +1,10 @@
 package com.ydxsj.ydsoldnote.mapper;
 
-import com.ydxsj.ydsoldnote.bean.data.*;
+import com.ydxsj.ydsoldnote.bean.data.Addition;
+import com.ydxsj.ydsoldnote.bean.data.CarType;
+import com.ydxsj.ydsoldnote.bean.data.Channel;
+import com.ydxsj.ydsoldnote.bean.data.SellType;
+import com.ydxsj.ydsoldnote.bean.data.equipment.*;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -78,4 +82,78 @@ public interface DataManagementMapper {
      * @return
      */
     List<EquipmentMsg> getEquipmentMsg();
+
+    /**
+     * 安装平台获取库存信息
+     * @param id
+     * @return
+     */
+    List<InventoryMsg> getInventoryMsgByTPId(@Param("id") Integer id);
+
+    /**
+     * 根据型号id获取型号信息
+     * @param equipmentMsgId
+     * @return
+     */
+    EquipmentMsg getEquipmentMsgById(@Param("id") Integer equipmentMsgId);
+
+    /**
+     * 根据id集合查询库存信息
+     * @param ids
+     * @return
+     */
+    List<InventoryMsg> getInventoryMsgByListIds(@Param("ids") List<String> ids);
+
+    /**
+     * 根据id获取 该id发起的转移申请&是该id收货的转移申请单
+     * @param id
+     * @return
+     */
+    List<TransferMsg> getTransferMsgByTPId(@Param("id") Integer id);
+
+
+    /**
+     * 根据id集合查询转移申请单集合
+     * @param ids
+     * @return
+     */
+    List<TransferMsg> getTransferMsgByIds(@Param("ids")List<String> ids);
+
+
+    /**
+     * 根据id获取该平台的更换记录
+     * @param id
+     * @return
+     */
+    List<ChangeMsg> getChangeMsgById(@Param("id")Integer id);
+
+    /**
+     * 根据ids集合获取更换记录
+     * @param ids
+     * @return
+     */
+    List<ChangeMsg> getChangeMsgByIds(@Param("ids")List<String> ids);
+
+
+    /**
+     * 根据ids获取维修信息
+     * @param ids
+     * @return
+     */
+    List<MaintainMsg> getMaintainMsgByIds(@Param("ids")List<String> ids);
+
+    /**
+     * 根据ids 获取采购信息
+     * @param ids
+     * @return
+     */
+    List<PurchaseMsg> getPurchaseMsgByIds(@Param("ids")List<String> ids);
+
+
+    /**
+     * 根据ids 获取报废信息
+     * @param ids
+     * @return
+     */
+    List<ScrapMsg> getScrapMsgByIds(@Param("ids")List<String> ids);
 }

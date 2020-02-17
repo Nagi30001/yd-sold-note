@@ -1,7 +1,11 @@
 package com.ydxsj.ydsoldnote.controller;
 
 import com.alibaba.fastjson.JSONObject;
-import com.ydxsj.ydsoldnote.bean.data.*;
+import com.ydxsj.ydsoldnote.bean.data.Channel;
+import com.ydxsj.ydsoldnote.bean.data.City;
+import com.ydxsj.ydsoldnote.bean.data.Province;
+import com.ydxsj.ydsoldnote.bean.data.SellType;
+import com.ydxsj.ydsoldnote.bean.data.equipment.*;
 import com.ydxsj.ydsoldnote.bean.user.User;
 import com.ydxsj.ydsoldnote.service.DataManagementService;
 import com.ydxsj.ydsoldnote.service.UserService;
@@ -22,6 +26,14 @@ public class DMSController {
     private DataManagementService dataManagementService;
     @Autowired
     private UserService userService;
+
+    private final static String PLATFORM_ABBREVIATION = "PT";
+    private final static String YOUDAO_ABBREVIATION = "YD";
+    private final static String SUPER_ADMIN = "R1001";
+    private final static String ADMIN = "R1002";
+    private final static String SELL_USER = "R1003";
+    private final static String PLATFORM_USER = "R1004";
+    private final static String YOUDAO_PLATFORM_USER= "R1005";
 
 
     /**
@@ -62,6 +74,7 @@ public class DMSController {
     @RequestMapping("/addChannel")
     public JSONObject addChannelMsg(@RequestBody Map map){
         JSONObject jsonObject = new JSONObject();
+        System.err.println(map);
         String token = (String) map.get("token");
         Map channelMsg = (Map) map.get("channel");
         if (StringUtils.isEmpty(token) || channelMsg == null){
@@ -123,5 +136,65 @@ public class DMSController {
         jsonObject.put("code",20000);
         jsonObject.put("equipmentMsg",equipmentMsg);
         return jsonObject;
+    }
+
+
+    /**
+     * 优道用户:获取该省份权限内所有平台的 设备库存信息/维修信息/采购信息/报废信息/转移信息/更换信息
+     * 安装平台:获取自己的 设备库存信息/转移信息/更换信息
+     * @param token
+     * @return
+     */
+    @RequestMapping("/getEquipmentInventory")
+    public JSONObject getEquipmentInventory(String token){
+        JSONObject jsonObject = new JSONObject();
+        // 判断用户是什么用户
+        User user = userService.getUserByToken(token);
+        if (user == null){
+            jsonObject.put("code",20001);
+            jsonObject.put("message","用户信息失效");
+            return jsonObject;
+        }
+        // 安装平台
+        if (PLATFORM_USER.equals(user.getRoleNum())){
+            // 获取库存信息
+            List<InventoryMsg> inventoryMsg = dataManagementService.getInventoryMsgByTPId(user, PLATFORM_ABBREVIATION);
+            // 获取转移信息
+            List<TransferMsg> transferMsg = dataManagementService.getTransferMsgById(user,PLATFORM_ABBREVIATION);
+            // 获取更换信息
+            List<ChangeMsg> changeMsg = dataManagementService.getChangeMsgByTPId(user,PLATFORM_ABBREVIATION);
+            jsonObject.put("code",20000);
+            jsonObject.put("informationMsg",inventoryMsg);
+            jsonObject.put("transferMsg",transferMsg);
+            jsonObject.put("changeMsg",changeMsg);
+            return jsonObject;
+
+        } else if (SUPER_ADMIN.equals(user.getRoleNum()) || ADMIN.equals(user.getRoleNum()) || YOUDAO_PLATFORM_USER.equals(user.getRoleNum()) ){
+            //优道用户
+            // 获取库存信息
+            List<InventoryMsg> inventoryMsg = dataManagementService.getInventoryMsgByTPId(user, YOUDAO_ABBREVIATION);
+            // 获取维修信息
+            List<MaintainMsg> maintainMsg = dataManagementService.getMaintainMsg(user,YOUDAO_ABBREVIATION);
+            // 获取采购信息
+            List<PurchaseMsg> purchaseMsg = dataManagementService.getPurchaseMsg(user,YOUDAO_ABBREVIATION);
+            // 获取转移信息
+            List<TransferMsg> transferMsg = dataManagementService.getTransferMsgById(user,YOUDAO_ABBREVIATION);
+            // 获取更换信息
+            List<ChangeMsg> changeMsg = dataManagementService.getChangeMsgByTPId(user,YOUDAO_ABBREVIATION);
+            // 获取报废信息
+            List<ScrapMsg> scrapMsg = dataManagementService.getScrapMsg(user,YOUDAO_ABBREVIATION);
+            jsonObject.put("code",20000);
+            jsonObject.put("informationMsg",inventoryMsg);
+            jsonObject.put("transferMsg",transferMsg);
+            jsonObject.put("changeMsg",changeMsg);
+            jsonObject.put("maintainMsg",maintainMsg);
+            jsonObject.put("purchaseMsg",purchaseMsg);
+            jsonObject.put("scrapMsg",scrapMsg);
+            return jsonObject;
+        } else {
+            jsonObject.put("code",20001);
+            jsonObject.put("message","用户信息失效");
+            return jsonObject;
+        }
     }
 }

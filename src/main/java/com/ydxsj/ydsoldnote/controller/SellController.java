@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.text.ParseException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +81,7 @@ public class SellController {
         JSONObject jsonObject = new JSONObject();
         // 获取用户信息
         User user = userService.getUserByToken(token);
+        System.err.println(user);
         if (user == null) {
             System.err.println(user.toString());
             jsonObject.put("message", "账号已失效,请重新登陆");
@@ -87,12 +89,14 @@ public class SellController {
             return jsonObject;
         }
         List<String> roles = Arrays.asList(user.getRoleNum().split(","));
+        System.err.println("roles"+roles);
 
         // 判断是优道管理 还是平台用户
-        if (roles.contains("R1001") || roles.contains("R1002")) {
+        if (roles.contains("R1001") || roles.contains("R1002") || roles.contains("R1003"))  {
             //优道管理
             //获取收款待确认信息
             List<CarReceipts> carReceipts = sellReceiptsService.getReceiptsByGathering(user);
+            System.err.println(carReceipts);
             jsonObject.put("user", user);
             jsonObject.put("gatheringCheck", carReceipts);
             jsonObject.put("code", 20000);
@@ -185,6 +189,8 @@ public class SellController {
      */
     @RequestMapping("/sell/uploadFile")
     public JSONObject uploadFile(@RequestParam Map map, @RequestParam("file") MultipartFile file) {
+        System.err.println("map===="+map);
+        System.err.println("file===="+file);
         JSONObject jsonObject = new JSONObject();
           boolean i = sellReceiptsService.uploadFile(map, file);
         if (i) {
@@ -194,6 +200,63 @@ public class SellController {
         } else {
             jsonObject.put("code", 20001);
             jsonObject.put("message", "上传失败");
+            return jsonObject;
+        }
+    }
+
+
+    /**
+     * 获取该用户的报单数据，如果是平台，则获取该平台的单据
+     * @param token
+     * @return
+     */
+    @RequestMapping("/sell/getMyReceipts")
+    public JSONObject getMyReceipts(String token){
+        JSONObject jsonObject = new JSONObject();
+        List<CarReceipts> carReceipts = sellReceiptsService.getMyReceipts(token);
+        jsonObject.put("code",20000);
+        jsonObject.put("myReceipts",carReceipts);
+        return jsonObject;
+    }
+
+    /**
+     * 作废单据
+     * @param id
+     * @return
+     */
+    @RequestMapping("/sell/cancellation")
+    public JSONObject cancellation(String token,Integer id){
+        JSONObject jsonObject = new JSONObject();
+
+        boolean row = sellReceiptsService.cancellationCarReceiptsById(token,id);
+
+        if (row){
+            jsonObject.put("code",20000);
+            return jsonObject;
+        } else {
+            jsonObject.put("code",20001);
+            jsonObject.put("message","已报废或无法报废该单据");
+            return jsonObject;
+        }
+    }
+
+    /**
+     * 根据条件查询单据
+     * @param map
+     * @return
+     */
+    @RequestMapping("/sell/searchQueryDate")
+    public JSONObject searchQueryDate(@RequestBody Map map){
+        JSONObject jsonObject = new JSONObject();
+        List<CarReceipts> carReceipts = null;
+        try {
+            carReceipts = sellReceiptsService.searchQueryDate(map);
+            jsonObject.put("code",20000);
+            jsonObject.put("carReceipts",carReceipts);
+            return jsonObject;
+        } catch (ParseException e) {
+            jsonObject.put("code",20001);
+            jsonObject.put("message","查询错误，请重新查询");
             return jsonObject;
         }
 
