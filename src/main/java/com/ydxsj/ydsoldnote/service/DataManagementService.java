@@ -118,4 +118,15 @@ public interface DataManagementService {
      * @return
      */
     List<ScrapMsg> getScrapMsg(User user, String type);
+
+
+    /**
+     * 添加设备信息
+     * @param map
+     * @return
+     */
+    EquipmentMsg addEquipment(Map map);
+
+
+
 }

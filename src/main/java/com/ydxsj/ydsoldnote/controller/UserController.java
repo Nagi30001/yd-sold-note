@@ -75,6 +75,8 @@ public class UserController {
         System.err.println("获取权限："+token);
         if (token != null && token != ""){
             List<String> roles = userService.getUserInfoByToken(token);
+            User user = userService.getUserByToken(token);
+            json.put("user",user);
             json.put("code",20000);
             json.put("roles",roles);
             return json;

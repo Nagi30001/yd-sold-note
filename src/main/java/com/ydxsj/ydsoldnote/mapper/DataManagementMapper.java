@@ -156,4 +156,12 @@ public interface DataManagementMapper {
      * @return
      */
     List<ScrapMsg> getScrapMsgByIds(@Param("ids")List<String> ids);
+
+
+    /**
+     * 添加设备信息
+     * @param equipmentMsg
+     * @return
+     */
+    Integer insertEquipmentMsg(@Param("equipmentMsg") EquipmentMsg equipmentMsg);
 }

@@ -11,6 +11,7 @@ import com.ydxsj.ydsoldnote.service.DataManagementService;
 import com.ydxsj.ydsoldnote.service.UserService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -138,6 +139,28 @@ public class DMSController {
         return jsonObject;
     }
 
+    /**
+     * 添加设备信息
+     * @param map
+     * @return
+     */
+    @PostMapping("/addEquipment")
+    public JSONObject addEquipment(@RequestBody Map map){
+        JSONObject jsonObject = new JSONObject();
+        System.err.println(map);
+        EquipmentMsg equipmentMsg = dataManagementService.addEquipment(map);
+        if (equipmentMsg != null){
+            jsonObject.put("code",20000);
+            jsonObject.put("equipmentMsg",equipmentMsg);
+            return jsonObject;
+        } else {
+            jsonObject.put("code",20001);
+            jsonObject.put("message","添加失败");
+            return jsonObject;
+        }
+
+    }
+
 
     /**
      * 优道用户:获取该省份权限内所有平台的 设备库存信息/维修信息/采购信息/报废信息/转移信息/更换信息
@@ -167,8 +190,6 @@ public class DMSController {
             jsonObject.put("informationMsg",inventoryMsg);
             jsonObject.put("transferMsg",transferMsg);
             jsonObject.put("changeMsg",changeMsg);
-            return jsonObject;
-
         } else if (SUPER_ADMIN.equals(user.getRoleNum()) || ADMIN.equals(user.getRoleNum()) || YOUDAO_PLATFORM_USER.equals(user.getRoleNum()) ){
             //优道用户
             // 获取库存信息
@@ -190,11 +211,25 @@ public class DMSController {
             jsonObject.put("maintainMsg",maintainMsg);
             jsonObject.put("purchaseMsg",purchaseMsg);
             jsonObject.put("scrapMsg",scrapMsg);
-            return jsonObject;
         } else {
             jsonObject.put("code",20001);
             jsonObject.put("message","用户信息失效");
             return jsonObject;
         }
+
+
+        // 设备品牌信息
+        List<EquipmentMsg> equipmentMsg = dataManagementService.getEquipmentMsg();
+        // 省份权限列表
+        List<Province> provinces = dataManagementService.getProvinces(token);
+        // 城市权限列表
+        List<City> cities = dataManagementService.getCitysByProvinces(provinces);
+        // 收货平台列表
+        List<User> users = userService.getPlatformsByProvince(provinces);
+        jsonObject.put("equipmentMsg",equipmentMsg);
+        jsonObject.put("provinces",provinces);
+        jsonObject.put("cities",cities);
+        jsonObject.put("platform",users);
+        return jsonObject;
     }
 }

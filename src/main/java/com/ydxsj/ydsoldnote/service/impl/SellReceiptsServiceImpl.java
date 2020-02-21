@@ -252,6 +252,7 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
         System.err.println(file);
         //获取上传文件操作类型
         String type = (String) map.get("fileType");
+        String userId = String.valueOf(map.get("fileUserId"));
         // 获取文件名
         String fileName = file.getOriginalFilename();
         System.err.println("上传的文件名为：" + fileName);
@@ -263,7 +264,7 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
         System.err.println("文件名：" + faset);
         fileName = faset + suffixName;
         // 文件上传后的路径
-        String filePath = uploadDir;
+        String filePath = "49.234.210.89"+uploadDir+"/"+userId+"/";
         // 解决中文问题，liunx下中文路径，图片显示问题
         // fileName = UUID.randomUUID() + suffixName;
         File dest = new File(filePath + fileName);
@@ -475,7 +476,11 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
                 // 补全收款图片地址
                 List<ImageUrl> imageUrls = sellReceiptsMapper.getImageUrls(carReceipts1.getId());
                 if (imageUrls != null){
-                    carReceipts1.setImageUrls(imageUrls);
+                    List<String> urls = new ArrayList<>();
+                    for (ImageUrl imageUrl: imageUrls){
+                        urls.add(imageUrl.getUrl());
+                    }
+                    carReceipts1.setImageUrls(urls);
                 }
                 // 判断 收款人id是该用户 且 销售单据的收款信息id 是收款信息id
                 if (carReceipts1.getGatheringMsgId() == gatheringMsg.getId()) {

@@ -226,6 +226,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public List<User> getPlatformsByProvince(List<Province> provinces) {
+        List<User> users = userMapper.getPlatformsByProvince(provinces);
+        return users;
+    }
+
+    @Override
     public boolean checkJobNum(String value) {
 
         Integer row = userMapper.selectUserByJobNum(Integer.parseInt(value));

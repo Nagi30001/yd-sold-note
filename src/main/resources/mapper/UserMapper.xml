@@ -51,7 +51,7 @@
 
     <!--  Integer insertUser(@Param("user") User user);  -->
     <insert id="insertUser" useGeneratedKeys="true" keyProperty="id" >
-        insert into yd_sold_note.yd_receipts_yd_user (job_num, job_password, user_name, phone, province, city, role_num, create_user, create_time, address, status, beProvince)
+        insert into yd_sold_note.yd_receipts_yd_user (job_num, job_password, user_name, phone, province, city, role_num, create_user, create_time, address, status, be_province)
         values (#{user.jobNum},#{user.jobPassword},#{user.userName},#{user.phone},#{user.province},#{user.city},#{user.roleNum},#{user.createUser},#{user.createTime},#{user.address},#{user.status},#{user.beProvince})
     </insert>
 
@@ -66,5 +66,14 @@
     <!-- List<User> getUserByLikeUserName(String sellName);  -->
     <select id="getUserByLikeUserName" resultType="user">
         select * from yd_sold_note.yd_receipts_yd_user where user_name like #{sellName}
+    </select>
+
+    <!--  List<User> getPlatformsByProvince(@Param("provinces")List<Province> provinces);  -->
+    <select id="getPlatformsByProvince" resultType="user">
+        select * from yd_sold_note.yd_receipts_yd_user where province in
+        <foreach collection="provinces" item="province" open="(" separator="," close=")" index="index"  >
+            #{province.province}
+        </foreach>
+        and role_num in ('R1004','R1005')
     </select>
 </mapper>

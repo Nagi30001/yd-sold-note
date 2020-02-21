@@ -59,5 +59,5 @@ public class CarReceipts {
     // 时间集合
     private List<TimeMsg> timeMsgs;
     // 收款图片地址集合
-    private List<ImageUrl> imageUrls;
+    private List<String> imageUrls;
 }

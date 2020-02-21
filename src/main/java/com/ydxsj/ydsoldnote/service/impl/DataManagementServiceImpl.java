@@ -266,9 +266,33 @@ public class DataManagementServiceImpl implements DataManagementService {
         return scrapMsg;
     }
 
+    @Override
+    public EquipmentMsg addEquipment(Map map) {
+        String brand = String.valueOf(map.get("brand"));
+        String type = String.valueOf(map.get("type"));
+        String size = String.valueOf(map.get("size"));
+        if (StringUtils.isEmpty(brand) || StringUtils.isEmpty(type) || StringUtils.isEmpty(size)){
+            return null;
+        } else {
+            EquipmentMsg equipmentMsg = new EquipmentMsg();
+            equipmentMsg.setEquipmentBrand(brand);
+            equipmentMsg.setEquipmentTypeNum(type);
+            equipmentMsg.setSize(size+'"');
+            equipmentMsg.setStatus(1);
+            Integer row = dataManagementMapper.insertEquipmentMsg(equipmentMsg);
+            System.err.println("row::::::"+row);
+            if (row == 0){
+                return null;
+            } else {
+                return equipmentMsg;
+            }
+
+        }
+    }
+
 
     /**
-     * 把13未时间戳转换为看得懂的日期时间格式
+     * 把13位时间戳转换为看得懂的日期时间格式
      * @param timeMilli
      * @return
      */

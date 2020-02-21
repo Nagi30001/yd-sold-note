@@ -1,5 +1,6 @@
 package com.ydxsj.ydsoldnote.mapper;
 
+import com.ydxsj.ydsoldnote.bean.data.Province;
 import com.ydxsj.ydsoldnote.bean.role.Role;
 import com.ydxsj.ydsoldnote.bean.user.User;
 import org.apache.ibatis.annotations.Mapper;
@@ -77,4 +78,11 @@ public interface UserMapper {
      * @return
      */
     List<User> getUserByLikeUserName(String sellName);
+
+    /**
+     * 根据省份查询对应的收货平台用户
+     * @param provinces
+     * @return
+     */
+    List<User> getPlatformsByProvince(@Param("provinces")List<Province> provinces);
 }

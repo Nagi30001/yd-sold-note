@@ -105,4 +105,12 @@ public interface UserService {
      * @return
      */
     boolean updateUser(String token, Map userMap);
+
+
+    /**
+     * 根据省份查询对应的收货平台用户
+     * @param provinces
+     * @return
+     */
+    List<User> getPlatformsByProvince(List<Province> provinces);
 }

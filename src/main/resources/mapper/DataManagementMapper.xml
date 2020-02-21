@@ -146,5 +146,11 @@
         </foreach>
     </select>
 
+    <!--  Integer insertEquipmentMsg(@Param("equipmentMsg") EquipmentMsg equipmentMsg);  -->
+    <insert id="insertEquipmentMsg" useGeneratedKeys="true" keyProperty="id">
+        insert into yd_sold_note.yd_receipts_equipment_msg (equipment_brand, equipment_type_num, size, status)
+        values (#{equipmentMsg.equipmentBrand},#{equipmentMsg.equipmentTypeNum},#{equipmentMsg.size},#{equipmentMsg.status})
+    </insert>
+
 
 </mapper>

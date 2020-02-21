@@ -42,7 +42,7 @@
 
     <!-- List<CarReceipts> getCarReceiptsByStatus(@Param("i") int i,@Param("id") Integer id);   -->
     <select id="getCarReceiptsByStatus" resultType="carReceipts">
-        select * from yd_sold_note.yd_receipts_car_receipts where receipts_status &lt;= #{i} and user_id = #{id}
+        select * from yd_sold_note.yd_receipts_car_receipts where receipts_status &lt;= #{i} and user_id = #{id} and receipts_status != 0
     </select>
 
     <!--  List<CarReceipts> getCarReceiptsByStatusOfTH(int i, Integer id);  -->
