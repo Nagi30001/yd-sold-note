@@ -1,4 +1,4 @@
-package com.ydxsj.ydsoldnote.bean.data.equipment;
+package com.ydxsj.ydsoldnote.bean.data;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,12 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class EquipmentMsg {
-
+public class Iccid {
     private Integer id;
-    private String equipmentBrand;
-    private String equipmentTypeNum;
-    private String size;
+    private String iccid;
     private Integer status;
-
 }

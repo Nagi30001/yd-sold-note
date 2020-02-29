@@ -16,7 +16,7 @@
 
     <!--  List<User> selectUserByRole(String role);  -->
     <select id="selectUserByRole" resultType="user">
-        select * from yd_sold_note.yd_receipts_yd_user where role_num = #{role}
+        select * from yd_sold_note.yd_receipts_yd_user where role_num = #{role} order by job_num desc
     </select>
 
     <!--  List<User> getUsersByProvince(@Param("provinces") List<String> provinces,@Param("type") String type);  -->
@@ -59,7 +59,7 @@
     <update id="updateUser" useGeneratedKeys="true">
         update yd_sold_note.yd_receipts_yd_user set
         job_password = #{user.jobPassword},user_name = #{user.userName},phone = #{user.phone},province = #{user.province},city = #{user.city},role_num = #{user.roleNum},
-        address = #{user.address},beProvince = #{user.beProvince},status = #{user.status}
+        address = #{user.address},be_province = #{user.beProvince},status = #{user.status}
         where job_num = #{user.jobNum}
     </update>
 
@@ -76,4 +76,15 @@
         </foreach>
         and role_num in ('R1004','R1005')
     </select>
+
+    <!--Integer updateUserMsg(@Param("user") User user1);-->
+    <update id="updateUserMsg" useGeneratedKeys="true">
+      update yd_sold_note.yd_receipts_yd_user
+      <set>
+          <if test="user.jobPassword != null">
+              job_password = #{user.jobPassword},
+          </if>
+      </set>
+      where id = #{user.id}
+    </update>
 </mapper>

@@ -9,10 +9,10 @@ import java.util.List;
 @Mapper
 public interface RoleMapper {
 
-    /**
-     * 根据角色编码查询角色的权限编码
-     * @param roleNum
-     * @return
-     */
-    List<RolePermission> getPermissionByUserRole(String roleNum);
+//    /**
+//     * 根据角色编码查询角色的权限编码
+//     * @param roleNum
+//     * @return
+//     */
+//    List<RolePermission> getPermissionByUserRole(String roleNum);
 }

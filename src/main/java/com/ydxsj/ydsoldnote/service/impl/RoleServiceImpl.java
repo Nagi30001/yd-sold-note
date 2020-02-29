@@ -17,9 +17,9 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public List<RolePermission> getPermissionByUserRole(String roleNum) {
 
-        List<RolePermission> rolePermissions = roleMapper.getPermissionByUserRole(roleNum);
+//        List<RolePermission> rolePermissions = roleMapper.getPermissionByUserRole(roleNum);
 
-
-        return rolePermissions;
+        return null;
+//        return rolePermissions;
     }
 }

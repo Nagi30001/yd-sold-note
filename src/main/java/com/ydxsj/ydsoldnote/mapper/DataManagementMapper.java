@@ -1,12 +1,10 @@
 package com.ydxsj.ydsoldnote.mapper;
 
-import com.ydxsj.ydsoldnote.bean.data.Addition;
-import com.ydxsj.ydsoldnote.bean.data.CarType;
-import com.ydxsj.ydsoldnote.bean.data.Channel;
-import com.ydxsj.ydsoldnote.bean.data.SellType;
+import com.ydxsj.ydsoldnote.bean.data.*;
 import com.ydxsj.ydsoldnote.bean.data.equipment.*;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -164,4 +162,97 @@ public interface DataManagementMapper {
      * @return
      */
     Integer insertEquipmentMsg(@Param("equipmentMsg") EquipmentMsg equipmentMsg);
+
+
+    /**
+     * 根据参数类型获取相应状态数据
+     * @param type off 全部数据 on 启用中数据
+     * @return
+     */
+    List<CarType> getCarTypeMsg(@Param("type") String type);
+
+
+    /**
+     * 添加车辆型号信息
+     * @param carType 车辆型号信息
+     * @return 返回响应条数
+     */
+    Integer insertCarType(@Param("carType") CarType carType);
+
+    /**
+     * 根据信息获取设备id
+     * @param equipmentMsg
+     * @return
+     */
+    Integer getEquipmentMsgId(@Param("equipmentMsg") EquipmentMsg equipmentMsg);
+
+    /**
+     * 添加采购信息
+     * @param purchaseMsg
+     * @return
+     */
+    Integer insertPurchaseMsg(@Param("purchaseMsg") PurchaseMsg purchaseMsg);
+
+    /**
+     *  根据id获取对应的采购单据
+     * @param id
+     * @return
+     */
+    PurchaseMsg getPurchaseMsgById(@Param("id") String id);
+
+    /**
+     * 更新采购单据状态
+     * @param purchaseMsg
+     * @return
+     */
+    Integer updatePurchaseMsgStatus(@Param("purchaseMsg") PurchaseMsg purchaseMsg);
+
+    /**
+     * 根据收货人id获取单据
+     * @param id
+     * @return
+     */
+    List<PurchaseMsg> getPurchaseMsgByConsigneeUserId(@Param("id") Integer id);
+
+    /**
+     * 更新库存信息
+     * @param inventoryMsg
+     * @return
+     */
+    Integer updateInventoryMsg(@Param("inventoryMsg") InventoryMsg inventoryMsg);
+
+    /**
+     * 插入一条库存信息
+     * @param inventoryMsg
+     * @return
+     */
+    Integer insertInventoryMsg(@Param("inventoryMsg") InventoryMsg inventoryMsg);
+
+    /**
+     * 查询是否有该Iccid
+     * @param iccid
+     * @return
+     */
+    Integer getIccid(@Param("iccid") String iccid);
+
+    /**
+     * 根据状态获取对应的iccid数据
+     * @param status
+     * @return
+     */
+    List<Iccid> getIccidsByStatus(@Param("status") int status);
+
+    /**
+     * 根据字符串获取iccid
+     * @param s
+     * @return
+     */
+    String getIccidByiccid(@Param("s") String s);
+
+    /**
+     * 更新Iccid状态
+     * @param iccid2
+     * @return
+     */
+    Integer updateIccid(@Param("i") Iccid iccid2);
 }

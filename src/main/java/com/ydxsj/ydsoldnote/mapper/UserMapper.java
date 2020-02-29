@@ -19,11 +19,11 @@ public interface UserMapper {
     User selectUserById(Integer userId);
 
     /**
-     * 更具账号查询用户
+     * 根据账号查询用户
      * @param jobName
      * @return
      */
-    User selectUserByJobName(String jobName);
+    User selectUserByJobName(Integer jobName);
 
 
     /**
@@ -85,4 +85,11 @@ public interface UserMapper {
      * @return
      */
     List<User> getPlatformsByProvince(@Param("provinces")List<Province> provinces);
+
+    /**
+     * 更改用户信息
+     * @param user1
+     * @return
+     */
+    Integer updateUserMsg(@Param("user") User user1);
 }

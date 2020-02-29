@@ -4,9 +4,9 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ydxsj.ydsoldnote.mapper.RoleMapper">
 
-    <!-- List<RolePermission> getPermissionByUserRole(String roleNum);   -->
-    <select id="getPermissionByUserRole" resultType="rolePermission">
-        select * from yd_receipts_role_permission rp where rp.role_id = (select id from yd_receipts_role where role_num = #{roleNum})
-    </select>
+    <!--&lt;!&ndash; List<RolePermission> getPermissionByUserRole(String roleNum);   &ndash;&gt;-->
+    <!--<select id="getPermissionByUserRole" resultType="rolePermission">-->
+        <!--select * from yd_receipts_role_permission rp where rp.role_id = (select id from yd_receipts_role where role_num = #{roleNum})-->
+    <!--</select>-->
 
 </mapper>

@@ -113,4 +113,10 @@ public interface UserService {
      * @return
      */
     List<User> getPlatformsByProvince(List<Province> provinces);
+
+    /**
+     * 更新密码
+     * @param map
+     */
+    void updatePassword(Map map);
 }

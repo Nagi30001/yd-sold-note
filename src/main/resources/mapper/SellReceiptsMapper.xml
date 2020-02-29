@@ -26,13 +26,13 @@
         #{carReceipts.thirdPartyTerraceId},#{carReceipts.money},#{carReceipts.cashPledge},#{carReceipts.predictInstallTime},#{carReceipts.gatheringMsgId},#{carReceipts.gatheringType})
     </insert>
 
-    <!--  List<CarReceipts> getCarReceiptsByProvince(@Param("provinces") List<String> provinces);   -->
+    <!--  List<CarReceipts> getCarReceiptsByProvince(@Param("provinces") List<String> provinces, @Param("page") Integer page ,@Param("count") Integer count);   -->
     <select id="getCarReceiptsByProvince" resultType="carReceipts">
         select * from yd_sold_note.yd_receipts_car_receipts where province in
         <foreach collection="provinces" item="province" open="(" separator="," close=")" index="index" >
             #{province}
         </foreach>
-        order by create_time desc
+        order by create_time desc limit #{page},#{count}
     </select>
 
     <!--  GatheringMsg getGatheringMsgById(@Param("gatheringMsgId") Integer gatheringMsgId);  -->
@@ -65,8 +65,8 @@
             <if test="type == 'installCheck' and carReceipts.third_party_check_time != null" >
             third_party_check_time = #{carReceipts.thirdPartyCheckTime},receipts_status = #{carReceipts.receiptsStatus}
             </if>
-            <if test="type == 'gatheringCheck' ">
-            receipts_status = #{carReceipts.receiptsStatus}
+            <if test="type == 'gatheringCheck' and carReceipts.collectionTime != null ">
+                collection_time = #{carReceipts.collectionTime}}  ,receipts_status = #{carReceipts.receiptsStatus}
             </if>
         </set>
         where id = #{carReceipts.id}
@@ -104,33 +104,111 @@
         select * from yd_sold_note.yd_receipts_image_url where msg_id = #{id}
     </select>
 
-    <!--     List<CarReceipts> searchCarReceipts(@Param("users") List<User> users, @Param("tpId") Integer tpId, @Param("startingDate") String startingDate, @Param("endDay") String endDay, @Param("clientName") String clientName, @Param("clientCarNum") String clientCarNum);  -->
+    <!--List<CarReceipts> searchCarReceipts(@Param("queryCRMsg") QueryCRMsg queryCRMsg);-->
     <select id="searchCarReceipts" resultType="carReceipts">
-        select * from yd_sold_note.yd_receipts_car_receipts
-        <where>
-            <if test="users != null">
-                user_id in
-                <foreach collection="users" item="user" open="(" separator="," close=")" index="index" >
-                    #{user.id}
-                </foreach>
-            </if>
-            <if test="tpId != null and tpId != '' ">
-                and third_party_terrace_id = #{tpId}
-            </if>
-            <if test="startingDate != null and startingDate != '' ">
-                and create_time &gt; #{startingDate}
-            </if>
-            <if test="endDay != null and endDay != '' ">
-                and create_time &lt; #{endDay}
-            </if>
-            <if test="clientName != null and clientName != ''">
-                and client_name = #{clientName}
-            </if>
-            <if test="clientCarNum != null and clientCarNum != ''">
-                and client_car_num = #{clientCarNum}
-            </if>
-        </where>
+      select * from yd_sold_note.yd_receipts_car_receipts
+      <where>
+          <if test="queryCRMsg.type == 'DT' ">
+              user_id in
+            <foreach collection="queryCRMsg.users" item="user" open="(" separator="," close=")" index="index">
+                 #{user.id}
+            </foreach>
+             and province in
+            <foreach collection="queryCRMsg.provinces" item="province" open="(" separator="," close=")" index="index">
+              #{province}
+            </foreach>
+          </if>
+          <if test="queryCRMsg.type == 'YD'">
+               user_id = #{queryCRMsg.userId}
+          </if>
+          <if test="queryCRMsg.type == 'PT'">
+               third_party_terrace_id = #{queryCRMsg.userId}
+          </if>
+          <if test="queryCRMsg.type != 'PT' and queryCRMsg.type != 'DT' and queryCRMsg.type != 'YD'">
+              user_id = 0
+          </if>
+          <if test="queryCRMsg.sellType != null ">
+              and sell_type_name  = #{queryCRMsg.sellType}
+          </if>
+          <if test="queryCRMsg.TPId != null ">
+              and third_party_terrace_id = #{queryCRMsg.TPId}
+          </if>
+          <if test="queryCRMsg.clientName != null ">
+              and client_name like #{queryCRMsg.clientName}
+          </if>
+          <if test="queryCRMsg.clientCarNum != null ">
+              and client_car_num like #{queryCRMsg.clientCarNum}
+          </if>
+          <if test="queryCRMsg.channel != null ">
+              and channel_id = #{queryCRMsg.channel}
+          </if>
+          <if test="queryCRMsg.status != null ">
+              and receipts_status = #{queryCRMsg.status}
+          </if>
+          <if test="queryCRMsg.checkTimeType != null ">
+              <if test="queryCRMsg.checkTimeType == '创建时间' ">
+                  <if test="queryCRMsg.startingDate != null ">
+                      and create_time &gt; #{queryCRMsg.startingDate}
+                  </if>
+                  <if test="queryCRMsg.endDate != null ">
+                      and create_time &lt; #{queryCRMsg.endDate}
+                  </if>
+              </if>
+              <if test="queryCRMsg.checkTimeType == '收款时间' ">
+                  <if test="queryCRMsg.startingDate != null ">
+                      and collection_time &gt; #{queryCRMsg.startingDate}
+                  </if>
+                  <if test="queryCRMsg.endDate != null ">
+                      and collection_time &lt; #{queryCRMsg.endDate}
+                  </if>
+              </if>
+              <if test="queryCRMsg.checkTimeType == '安装时间' ">
+                  <if test="queryCRMsg.startingDate != null ">
+                      and third_party_check_time &gt; #{queryCRMsg.startingDate}
+                  </if>
+                  <if test="queryCRMsg.endDate != null ">
+                      and third_party_check_time &lt; #{queryCRMsg.endDate}
+                  </if>
+              </if>
+          </if>
+          <if test="queryCRMsg.checkTimeType == null ">
+              <if test="queryCRMsg.startingDate != null ">
+                  and create_time &gt; #{queryCRMsg.startingDate}
+              </if>
+              <if test="queryCRMsg.endDate != null ">
+                  and create_time &lt; #{queryCRMsg.endDate}
+              </if>
+          </if>
+
+
+      </where>
     </select>
+
+    <!--Integer updateCarReceipts(@Param("s") CarReceipts carReceipts1);-->
+    <update id="updateCarReceipts" useGeneratedKeys="true">
+        update yd_sold_note.yd_receipts_car_receipts
+        <set>
+            <if test="s.receiptsStatus != null">
+                receipts_status = #{s.receiptsStatus},
+            </if>
+            <if test="s.equipmentBrand != null ">
+                equipment_brand = #{s.equipmentBrand},
+            </if>
+            <if test="s.equipmentTypeNum != null" >
+                equipment_type_num = #{s.equipmentTypeNum},
+            </if>
+            <if test="s.size != null" >
+                size = #{s.size},
+            </if>
+            <if test="s.thirdPartyCheckTime != null" >
+                third_party_check_time = #{s.thirdPartyCheckTime},
+            </if>
+            <if test="s.iccid != null" >
+                iccid = #{s.iccid}
+            </if>
+        </set>
+        where id = #{s.id}
+    </update>
 
 
 </mapper>

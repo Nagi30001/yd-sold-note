@@ -4,6 +4,7 @@ package com.ydxsj.ydsoldnote.mapper;
 import com.ydxsj.ydsoldnote.bean.CarReceipts;
 import com.ydxsj.ydsoldnote.bean.GatheringMsg;
 import com.ydxsj.ydsoldnote.bean.ImageUrl;
+import com.ydxsj.ydsoldnote.bean.QueryCRMsg;
 import com.ydxsj.ydsoldnote.bean.user.User;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -45,7 +46,7 @@ public interface SellReceiptsMapper {
      * @param provinces
      * @return
      */
-    List<CarReceipts> getCarReceiptsByProvince(@Param("provinces") List<String> provinces);
+    List<CarReceipts> getCarReceiptsByProvince(@Param("provinces") List<String> provinces, @Param("page") Integer page ,@Param("count") Integer count);
 
 
     /**
@@ -132,15 +133,20 @@ public interface SellReceiptsMapper {
     List<ImageUrl> getImageUrls(@Param("id") Integer id);
 
 
+
+
+
     /**
-     * 根据条件查询相关单据
-     * @param users 用户信息集合
-     * @param tpId 平台id
-     * @param startingDate 开始日期
-     * @param endDay    结束日期
-     * @param clientName 客户姓名
-     * @param clientCarNum 客户车牌号
+     * 更新单据信息
+     * @param carReceipts1
      * @return
      */
-    List<CarReceipts> searchCarReceipts(@Param("users") List<User> users, @Param("tpId") String tpId, @Param("startingDate") String startingDate, @Param("endDay") String endDay, @Param("clientName") String clientName, @Param("clientCarNum") String clientCarNum);
+    Integer updateCarReceipts(@Param("s") CarReceipts carReceipts1);
+
+    /**
+     * 根据查询条件查询单据
+     * @param queryCRMsg
+     * @return
+     */
+    List<CarReceipts> searchCarReceipts(@Param("queryCRMsg") QueryCRMsg queryCRMsg);
 }

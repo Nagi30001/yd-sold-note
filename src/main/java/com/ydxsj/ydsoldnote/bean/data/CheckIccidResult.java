@@ -7,14 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CarType {
+public class CheckIccidResult {
 
-    private Integer id;
-    private String brand;
-    private String subsidiary;
-    private Integer status;
-
-    private String[] subsidiarys;
-
-
+    private Boolean result;
+    private String message;
 }

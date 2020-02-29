@@ -15,7 +15,7 @@ public interface SellReceiptsService {
      * @param user
      * @return
      */
-    List<CarReceipts> getCarReceipts(User user);
+    List<CarReceipts> getCarReceipts(User user,Map map);
 
     /**
      * 销售单据新增
@@ -86,4 +86,10 @@ public interface SellReceiptsService {
      * @return
      */
     List<CarReceipts> searchQueryDate(Map map) throws ParseException;
+
+    /**
+     * 单据安装确认
+     * @param map
+     */
+    void pushInstallMsg(Map map);
 }

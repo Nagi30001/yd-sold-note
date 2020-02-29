@@ -3,6 +3,7 @@ package com.ydxsj.ydsoldnote.service;
 import com.ydxsj.ydsoldnote.bean.data.*;
 import com.ydxsj.ydsoldnote.bean.data.equipment.*;
 import com.ydxsj.ydsoldnote.bean.user.User;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 import java.util.Map;
@@ -128,5 +129,60 @@ public interface DataManagementService {
     EquipmentMsg addEquipment(Map map);
 
 
+    /**
+     * 获取车型数据
+     * @return
+     */
+    List<CarType> getCarTypeMsg();
 
+    /**
+     * 添加车型信息
+     * @param map
+     * @return
+     */
+    CarType addCarType(Map map);
+
+
+    /**
+     * 添加采购单据
+     * @param map
+     * @return
+     */
+    PurchaseMsg addPurchaseMsg(Map map);
+
+
+    /**
+     * 作废采购单据
+     * @param map
+     * @return
+     */
+    boolean scrapPurchaseMsg(Map map);
+
+    /**
+     * 采购单据收货
+     * @param map
+     * @return
+     */
+    boolean receivePurchaseMsg(Map map);
+
+    /**
+     * 检查Iccid信息
+     * @param iccid
+     * @return
+     */
+    CheckIccidResult checkIccid(String iccid);
+
+    /**
+     * 根据状态获取对应iccid
+     * @param status
+     * @return
+     */
+    List<Iccid> getIccidsByStatus(int status);
+
+    /**
+     * 根据用户区域权限获取该区域内的渠道信息
+     * @param user
+     * @return
+     */
+    List<Channel> getChangeByUser(User user);
 }

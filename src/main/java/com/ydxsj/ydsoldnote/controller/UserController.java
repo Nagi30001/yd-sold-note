@@ -13,10 +13,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.apache.shiro.authz.annotation.RequiresRoles;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -248,6 +245,23 @@ public class UserController {
             jsonObject.put("message","更新成功");
             return jsonObject;
         }
+    }
 
+    /**
+     * 更新密码
+     * @param map
+     * @return
+     */
+    @PostMapping("/user/updatePassword")
+    public JSONObject updatePassword(@RequestBody Map map){
+        JSONObject jsonObject = new JSONObject();
+        try {
+            userService.updatePassword(map);
+            jsonObject.put("code",20000);
+        } catch (Exception e){
+            jsonObject.put("code",20001);
+            jsonObject.put("message",e.getMessage());
+        }
+        return jsonObject;
     }
 }

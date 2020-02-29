@@ -14,6 +14,7 @@ import com.ydxsj.ydsoldnote.service.UserUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -35,7 +36,7 @@ public class UserServiceImpl implements UserService {
     private final static int EXPIRE = 3600 * 12 * 1000;
 
     public User getUserByJobName(String jobName) {
-        User user = userMapper.selectUserByJobName(jobName);
+        User user = userMapper.selectUserByJobName(Integer.valueOf(jobName));
         return user;
     }
 
@@ -229,6 +230,36 @@ public class UserServiceImpl implements UserService {
     public List<User> getPlatformsByProvince(List<Province> provinces) {
         List<User> users = userMapper.getPlatformsByProvince(provinces);
         return users;
+    }
+
+    @Override
+    @Transactional
+    public void updatePassword(Map map) {
+        String oldPassword = String.valueOf(map.get("oldPassword"));
+        String newPassword = String.valueOf(map.get("newPassword"));
+        String id = String.valueOf(map.get("id"));
+
+        if (StringUtils.isEmpty(oldPassword) || StringUtils.isEmpty(newPassword) || StringUtils.isEmpty(id)){
+            throw new RuntimeException("数据请求错误!");
+        }
+        // 获取用户信息
+        User user = userMapper.selectUserById(Integer.valueOf(id));
+        System.err.println(map);
+        System.err.println(user);
+        if (user == null || !oldPassword.equals(user.getJobPassword())){
+            throw new RuntimeException("原密码不正确");
+        } else {
+            User user1 = new User();
+            user1.setId(Integer.valueOf(id));
+            user1.setJobPassword(newPassword);
+            Integer row = userMapper.updateUserMsg(user1);
+            if (row != 1){
+                throw new RuntimeException("数据请求错误!");
+            }
+        }
+
+
+
     }
 
     @Override

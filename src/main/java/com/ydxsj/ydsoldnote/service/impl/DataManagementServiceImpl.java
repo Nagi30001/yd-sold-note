@@ -12,6 +12,7 @@ import com.ydxsj.ydsoldnote.service.UserUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -235,6 +236,9 @@ public class DataManagementServiceImpl implements DataManagementService {
         if (YOUDAO_ABBREVIATION.equals(type)){
             List<String> ids = userUtil.getIds(user);
             purchaseMsg = dataManagementMapper.getPurchaseMsgByIds(ids);
+        } else if (PLATFORM_ABBREVIATION.equals(type)){
+            List<PurchaseMsg> purchaseMsgs = dataManagementMapper.getPurchaseMsgByConsigneeUserId(user.getId());
+            return purchaseMsgs;
         } else {
             return null;
         }
@@ -280,7 +284,6 @@ public class DataManagementServiceImpl implements DataManagementService {
             equipmentMsg.setSize(size+'"');
             equipmentMsg.setStatus(1);
             Integer row = dataManagementMapper.insertEquipmentMsg(equipmentMsg);
-            System.err.println("row::::::"+row);
             if (row == 0){
                 return null;
             } else {
@@ -288,6 +291,196 @@ public class DataManagementServiceImpl implements DataManagementService {
             }
 
         }
+    }
+
+    @Override
+    public List<CarType> getCarTypeMsg() {
+        List<CarType> carTypeList =  dataManagementMapper.getCarTypeMsg("off");
+        return carTypeList;
+    }
+
+    @Override
+    public CarType addCarType(Map map) {
+        String brand = String.valueOf(map.get("brand"));
+        String subsidiary = String.valueOf(map.get("subsidiary"));
+        CarType carType = new CarType();
+        carType.setBrand(brand);
+        carType.setSubsidiary(subsidiary);
+        carType.setStatus(1);
+        Integer row = dataManagementMapper.insertCarType(carType);
+        if (row == 0){
+            return null;
+        } else {
+            return carType;
+        }
+    }
+
+    @Transactional
+    @Override
+    public PurchaseMsg addPurchaseMsg(Map map) {
+        System.err.println(map);
+        String id = String.valueOf(map.get("purchaseUserId"));
+        String consigneeUserId = String.valueOf(map.get("consigneeUserId"));
+        String brand = String.valueOf(map.get("brand"));
+        String type = String.valueOf(map.get("type"));
+        String size = String.valueOf(map.get("size"));
+        EquipmentMsg equipmentMsg = new EquipmentMsg();
+        equipmentMsg.setEquipmentBrand(brand);
+        equipmentMsg.setEquipmentTypeNum(type);
+        equipmentMsg.setSize(size);
+        // 获取设备Id
+        Integer equipmentMsgId = dataManagementMapper.getEquipmentMsgId(equipmentMsg);
+        Integer count = (Integer) map.get("count");
+        PurchaseMsg purchaseMsg = new PurchaseMsg();
+        purchaseMsg.setPurchaseUserId(Integer.valueOf(id));
+        purchaseMsg.setConsigneeUserId(Integer.valueOf(consigneeUserId));
+        purchaseMsg.setEquipmentMsgId(equipmentMsgId);
+        purchaseMsg.setCount(count);
+        purchaseMsg.setPurchaseTime(String.valueOf(System.currentTimeMillis()));
+        purchaseMsg.setStatus(1);
+        Integer row = dataManagementMapper.insertPurchaseMsg(purchaseMsg);
+        if(!row.equals(1)){
+            throw new  RuntimeException("新增采购信息失败！");
+        } else {
+            purchaseMsg.setConsigneeUser(userMapper.selectUserById(purchaseMsg.getConsigneeUserId()));
+            purchaseMsg.setPurchaseUser(userMapper.selectUserById(purchaseMsg.getPurchaseUserId()));
+            purchaseMsg.setEquipmentMsg(dataManagementMapper.getEquipmentMsgById(purchaseMsg.getEquipmentMsgId()));
+            // 添加库存
+            // 获取该用户库存
+            boolean index = false;
+            InventoryMsg inventoryMsg1 = null;
+            List<InventoryMsg> InventoryMsgs = dataManagementMapper.getInventoryMsgByTPId(Integer.valueOf(consigneeUserId));
+            // 判断是否有该设备库存
+            for (InventoryMsg inventoryMsg : InventoryMsgs){
+                if (inventoryMsg.getEquipmentMsgId() == purchaseMsg.getEquipmentMsgId()){
+                    index = true;
+                    inventoryMsg1 = inventoryMsg;
+                    break;
+                }
+            }
+            if (index && inventoryMsg1 != null ){
+                // 有该库存信息，更新库存
+                InventoryMsg inventoryMsg = new InventoryMsg();
+                inventoryMsg.setId(inventoryMsg1.getId());
+                inventoryMsg.setInPurchase(count);
+                Integer line = dataManagementMapper.updateInventoryMsg(inventoryMsg);
+                if(line != 1){
+                    // 库存更新失败，回调
+                    throw new  RuntimeException("更新库存信息失败！");
+                }
+            } else {
+                // 没有该库存信息，新增一条库存
+                InventoryMsg inventoryMsg = new InventoryMsg();
+                inventoryMsg.setThirdPartyTerraceId(purchaseMsg.getConsigneeUserId());
+                inventoryMsg.setEquipmentMsgId(purchaseMsg.getEquipmentMsgId());
+                inventoryMsg.setAwaitReceive(0);
+                inventoryMsg.setAwaitInstall(0);
+                inventoryMsg.setInPurchase(purchaseMsg.getCount());
+                inventoryMsg.setInMaintain(0);
+                inventoryMsg.setInInventory(0);
+                Integer line = dataManagementMapper.insertInventoryMsg(inventoryMsg);
+                if (line != 1){
+                    throw new  RuntimeException("添加库存失败！");
+                }
+            }
+            purchaseMsg.setPurchaseTime(sdf.format(new Date(Long.parseLong(purchaseMsg.getPurchaseTime()))));
+            return purchaseMsg;
+        }
+    }
+
+    @Override
+    @Transactional
+    public boolean scrapPurchaseMsg(Map map) {
+        String userId = String.valueOf(map.get("userId"));
+        String purchaseMsgId = String.valueOf(map.get("purchaseMsgId"));
+        // 获取采购单据信息
+        PurchaseMsg purchaseMsg = dataManagementMapper.getPurchaseMsgById(purchaseMsgId);
+        // 单据null 或者 创建人不是该用户 则失败
+        if (purchaseMsg == null || purchaseMsg.getPurchaseUserId() != Integer.valueOf(userId)){
+            return false;
+        } else {
+            PurchaseMsg purchaseMsg1 = new PurchaseMsg();
+            purchaseMsg1.setStatus(0);
+            purchaseMsg1.setId(Integer.valueOf(purchaseMsgId));
+            purchaseMsg1.setScrapTime(String.valueOf(System.currentTimeMillis()));
+            // 修改状态
+            Integer row = dataManagementMapper.updatePurchaseMsgStatus(purchaseMsg1);
+            System.err.println(row);
+            if (!row.equals(1)){
+                throw new RuntimeException("更新采购单据状态失败");
+            }
+            // 减少库存的采购中数量
+            return true;
+        }
+    }
+
+    @Override
+    public boolean receivePurchaseMsg(Map map) {
+        String userId = String.valueOf(map.get("userId"));
+        String purchaseMsgId = String.valueOf(map.get("purchaseMsgId"));
+        // 获取单据信息
+        PurchaseMsg purchaseMsg = dataManagementMapper.getPurchaseMsgById(purchaseMsgId);
+        if (purchaseMsg == null || purchaseMsg.getConsigneeUserId() != Integer.valueOf(userId) || StringUtils.isEmpty(userId)){
+            return false;
+        } else {
+            // 收货操作
+            // 采购单据状态更改/补相应时间
+            PurchaseMsg purchaseMsg1 = new PurchaseMsg();
+            purchaseMsg1.setStatus(2);
+            purchaseMsg1.setArriveTime(String.valueOf(System.currentTimeMillis()));
+            purchaseMsg1.setId(Integer.valueOf(purchaseMsgId));
+            Integer row = dataManagementMapper.updatePurchaseMsgStatus(purchaseMsg1);
+            if (!row.equals(1)){
+                throw new RuntimeException("采购单据状态更改失败！");
+            }
+            System.err.println("采购单据状态更新成功");
+            // 收货人 正常库存增加，采购中库存减少
+            InventoryMsg inventoryMsg = new InventoryMsg();
+            inventoryMsg.setThirdPartyTerraceId(Integer.valueOf(userId));
+            inventoryMsg.setEquipmentMsgId(purchaseMsg.getEquipmentMsgId());
+            inventoryMsg.setAwaitInstall(purchaseMsg.getCount());
+            inventoryMsg.setInPurchase(-purchaseMsg.getCount());
+            Integer line = dataManagementMapper.updateInventoryMsg(inventoryMsg);
+
+            System.err.println("库存更新成功"+line);
+            if (!line.equals(1)){
+                throw new RuntimeException("库存更新失败！");
+            }
+            return true;
+
+        }
+    }
+
+    @Override
+    public CheckIccidResult checkIccid(String iccid) {
+        CheckIccidResult checkIccidResult = new CheckIccidResult();
+        iccid = iccid+"_";
+        Integer row = dataManagementMapper.getIccid(iccid);
+        if (row != 1){
+            checkIccidResult.setResult(false);
+            checkIccidResult.setMessage("Iccid有误或已被占用,请检查checkIccid！");
+        } else {
+            checkIccidResult.setResult(true);
+        }
+        return checkIccidResult;
+    }
+
+    @Override
+    public List<Iccid> getIccidsByStatus(int status) {
+        List<Iccid> iccids = dataManagementMapper.getIccidsByStatus(status);
+        return iccids;
+    }
+
+    @Transactional
+    @Override
+    public List<Channel> getChangeByUser(User user) {
+        // 获取区域城市集合
+        List<String> prvinces = userUtil.getProvinceByUser(user);
+        List<Channel> channels = dataManagementMapper.getChannelByProvince(prvinces);
+        if (channels == null){
+            throw new RuntimeException("请求数据错误!");
+        }
+        return channels;
     }
 
 

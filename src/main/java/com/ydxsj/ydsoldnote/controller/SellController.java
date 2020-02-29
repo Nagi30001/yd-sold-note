@@ -2,14 +2,14 @@ package com.ydxsj.ydsoldnote.controller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.ydxsj.ydsoldnote.bean.CarReceipts;
-import com.ydxsj.ydsoldnote.bean.data.Addition;
-import com.ydxsj.ydsoldnote.bean.data.CarType;
-import com.ydxsj.ydsoldnote.bean.data.Province;
-import com.ydxsj.ydsoldnote.bean.data.SellType;
+import com.ydxsj.ydsoldnote.bean.data.*;
+import com.ydxsj.ydsoldnote.bean.data.equipment.EquipmentMsg;
+import com.ydxsj.ydsoldnote.bean.data.equipment.InventoryMsg;
 import com.ydxsj.ydsoldnote.bean.user.User;
 import com.ydxsj.ydsoldnote.service.DataManagementService;
 import com.ydxsj.ydsoldnote.service.SellReceiptsService;
 import com.ydxsj.ydsoldnote.service.UserService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
@@ -35,47 +35,68 @@ public class SellController {
 
 
     @RequestMapping("/sell/sellmsg")
-    public JSONObject getReceipts(String token) {
-        //打桩
-        System.err.println("走到这里了----------" + token);
-//        String token = (String) map.get("token");
+    public JSONObject getReceipts(@RequestBody Map map ) {
+        System.err.println(map);
         JSONObject jsonObject = new JSONObject();
         // 用户信息
-//        try {
         User user = null;
         try {
-            user = userService.getUserByToken(token);
+            user = userService.getUserById(Integer.valueOf(String.valueOf(map.get("userId"))));
+            // 城市信息
+            List<Province> citys = userService.getCitys(user);
+            // 车型信息
+            List<CarType> carType = dataManagementService.getCarType();
+            // 平台信息
+            List<User> users = userService.getUserByRole("R1004");
+            // 销售类型
+            List<SellType> sellTypes = dataManagementService.getSellTypes();
+            // 附加业务
+            List<Addition> additions = dataManagementService.getAdditions();
+            // 全部单据列表(该角色所属地区的报单数据)
+            List<CarReceipts> carReceipts = sellReceiptsService.getCarReceipts(user,map);
+            // 获取该角色区域权限内的渠道信息
+            List<Channel> channels = dataManagementService.getChangeByUser(user);
+            System.err.println(1);
+            jsonObject.put("user", user);
+            jsonObject.put("citys", citys);
+            jsonObject.put("carType", carType);
+            jsonObject.put("thirdPartyMsg", users);
+            jsonObject.put("sellType", sellTypes);
+            jsonObject.put("additionType", additions);
+            jsonObject.put("receipts", carReceipts);
+            jsonObject.put("channel",channels);
+            jsonObject.put("code", 20000);
+            return jsonObject;
         } catch (Exception e) {
             jsonObject.put("message", "账号已失效,请重新登陆");
             jsonObject.put("code", 50014);
             return jsonObject;
         }
-        // 城市信息
-        List<Province> citys = userService.getCitys(user);
-        // 车型信息
-        List<CarType> carType = dataManagementService.getCarType();
-        // 平台信息
-        List<User> users = userService.getUserByRole("R1004");
-        // 销售类型
-        List<SellType> sellTypes = dataManagementService.getSellTypes();
-        // 附加业务
-        List<Addition> additions = dataManagementService.getAdditions();
-        // 全部单据列表(该角色所属地区的报单数据)
-        List<CarReceipts> carReceipts = sellReceiptsService.getCarReceipts(user);
-
-        jsonObject.put("user", user);
-        jsonObject.put("citys", citys);
-        jsonObject.put("carType", carType);
-        jsonObject.put("thirdPartyMsg", users);
-        jsonObject.put("sellType", sellTypes);
-        jsonObject.put("additionType", additions);
-        jsonObject.put("receipts", carReceipts);
-        jsonObject.put("code", 20000);
-        return jsonObject;
-
 
     }
 
+    /**
+     * 大厅加载数据
+     * @param map
+     * @return
+     */
+    @RequestMapping("sell/loadSellMsg")
+    public JSONObject loadSellMsg(@RequestBody Map map){
+        JSONObject jsonObject = new JSONObject();
+        User user = userService.getUserById(Integer.valueOf(String.valueOf(map.get("userId"))));
+        // 全部单据列表(该角色所属地区的报单数据)
+        List<CarReceipts> carReceipts = sellReceiptsService.getCarReceipts(user,map);
+
+        jsonObject.put("receipts", carReceipts);
+        jsonObject.put("code", 20000);
+        return jsonObject;
+    }
+
+    /**
+     *
+     * @param token
+     * @return
+     */
     @RequestMapping("/sell/reachCheckMsg")
     public JSONObject getCheckReceipts(String token) {
         JSONObject jsonObject = new JSONObject();
@@ -109,10 +130,16 @@ public class SellController {
             List<CarReceipts> carReceipts2 = sellReceiptsService.getReceiptsByGathering(user);
             //获取安装待确认信息
             List<CarReceipts> carReceipts3 = sellReceiptsService.getReceiptsByInstall(user);
+            // 获取设备信息
+            List<InventoryMsg> inventoryMsg = dataManagementService.getInventoryMsgByTPId(user,"PT");
+            // 获取iccid
+            List<Iccid> iccids = dataManagementService.getIccidsByStatus(1);
             jsonObject.put("user", user);
             jsonObject.put("gatheringCheck", carReceipts2);
             jsonObject.put("reachCheck", carReceipts1);
             jsonObject.put("installCheck", carReceipts3);
+            jsonObject.put("inventoryMsg",inventoryMsg);
+//            jsonObject.put("")
             jsonObject.put("code", 20000);
             return jsonObject;
 
@@ -260,7 +287,25 @@ public class SellController {
             return jsonObject;
         }
 
+    }
 
+    /**
+     * 安装确认
+     * @param map
+     * @return
+     */
+    @PostMapping("/sell/pushInstallMsg")
+    public JSONObject pushInstallMsg(@RequestBody Map map){
+        JSONObject jsonObject = new JSONObject();
+        try{
+            sellReceiptsService.pushInstallMsg(map);
+            jsonObject.put("code",20000);
+            return jsonObject;
+        } catch(Exception e){
+            jsonObject.put("code",20001);
+            jsonObject.put("message",e.getMessage());
+            return jsonObject;
+        }
     }
 
 

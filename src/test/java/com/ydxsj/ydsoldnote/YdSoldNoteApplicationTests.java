@@ -3,12 +3,15 @@ package com.ydxsj.ydsoldnote;
 import com.ydxsj.ydsoldnote.bean.role.RolePermission;
 import com.ydxsj.ydsoldnote.mapper.RoleMapper;
 import com.ydxsj.ydsoldnote.mapper.UserTokenMapper;
+import org.apache.commons.collections.CollectionUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 @RunWith(SpringRunner.class)
@@ -21,8 +24,18 @@ public class YdSoldNoteApplicationTests {
     private RoleMapper roleMapper;
     @Test
     public void contextLoads() {
-        List<RolePermission> r1001 = roleMapper.getPermissionByUserRole("R1005");
-        System.err.println(r1001.toString());
+//        List<RolePermission> r1001 = roleMapper.getPermissionByUserRole("R1005");
+//        System.err.println(r1001.toString());
+        List<String> a = new ArrayList<>();
+        List<String> b = new ArrayList<>();
+        a.add("abc");
+        a.add("bcd");
+        a.add("aaa");
+        b.add("bcd");
+        b.add("abc");
+        b.add("ccc");
+        System.err.println(CollectionUtils.isSubCollection(a,b));
+
     }
 
 }

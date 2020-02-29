@@ -51,4 +51,4 @@ logging:
     com:
       ydxsj: debug
 
-uploadDir: /Users/nagi30002/images/
+uploadDir: /data/images/cms-picture/

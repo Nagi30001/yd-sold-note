@@ -1,20 +1,14 @@
 package com.ydxsj.ydsoldnote.controller;
 
 import com.alibaba.fastjson.JSONObject;
-import com.ydxsj.ydsoldnote.bean.data.Channel;
-import com.ydxsj.ydsoldnote.bean.data.City;
-import com.ydxsj.ydsoldnote.bean.data.Province;
-import com.ydxsj.ydsoldnote.bean.data.SellType;
+import com.ydxsj.ydsoldnote.bean.data.*;
 import com.ydxsj.ydsoldnote.bean.data.equipment.*;
 import com.ydxsj.ydsoldnote.bean.user.User;
 import com.ydxsj.ydsoldnote.service.DataManagementService;
 import com.ydxsj.ydsoldnote.service.UserService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -186,10 +180,13 @@ public class DMSController {
             List<TransferMsg> transferMsg = dataManagementService.getTransferMsgById(user,PLATFORM_ABBREVIATION);
             // 获取更换信息
             List<ChangeMsg> changeMsg = dataManagementService.getChangeMsgByTPId(user,PLATFORM_ABBREVIATION);
+            // 采购信息
+            List<PurchaseMsg> purchaseMsg = dataManagementService.getPurchaseMsg(user,YOUDAO_ABBREVIATION);
             jsonObject.put("code",20000);
             jsonObject.put("informationMsg",inventoryMsg);
             jsonObject.put("transferMsg",transferMsg);
             jsonObject.put("changeMsg",changeMsg);
+            jsonObject.put("purchaseMsg",purchaseMsg);
         } else if (SUPER_ADMIN.equals(user.getRoleNum()) || ADMIN.equals(user.getRoleNum()) || YOUDAO_PLATFORM_USER.equals(user.getRoleNum()) ){
             //优道用户
             // 获取库存信息
@@ -231,5 +228,126 @@ public class DMSController {
         jsonObject.put("cities",cities);
         jsonObject.put("platform",users);
         return jsonObject;
+    }
+
+
+    /**
+     * 获取车型数据
+     * @return
+     */
+    @GetMapping("/getCarTypeMsg")
+    public JSONObject getCarTypeMsg(){
+        JSONObject jsonObject = new JSONObject();
+        List<CarType> carTypeList = dataManagementService.getCarTypeMsg();
+
+        jsonObject.put("code",20000);
+        jsonObject.put("carTypeMsg",carTypeList);
+        return jsonObject;
+    }
+
+    /**
+     * 添加车型信息
+     * @return
+     */
+    @PostMapping("/addCarType")
+    public JSONObject addCarType(@RequestBody Map map){
+        System.err.println(map);
+        JSONObject jsonObject = new JSONObject();
+        CarType carType = dataManagementService.addCarType(map);
+        if (carType == null){
+            jsonObject.put("code",200001);
+            jsonObject.put("message","添加失败");
+            return jsonObject;
+        } else {
+            jsonObject.put("code",20000);
+            jsonObject.put("carType",carType);
+            return jsonObject;
+        }
+    }
+
+    /**
+     * 添加采购单据
+     * @param map
+     * @return
+     */
+    @PostMapping("/addPurchaseMsg")
+    public JSONObject addPurchaseMsg(@RequestBody Map map){
+        JSONObject jsonObject = new JSONObject();
+        try {
+            PurchaseMsg purchaseMsg =  dataManagementService.addPurchaseMsg(map);
+            jsonObject.put("code",20000);
+            jsonObject.put("purchaseMsg",purchaseMsg);
+            return jsonObject;
+        } catch(Exception e){
+            jsonObject.put("code",20001);
+            jsonObject.put("message",e.getMessage());
+            return jsonObject;
+        }
+    }
+
+    /**
+     * 作废采购单据
+     * @return
+     */
+    @PostMapping("/scrapPurchaseMsg")
+    public JSONObject scrapPurchaseMsg(@RequestBody Map map){
+        JSONObject jsonObject = new JSONObject();
+        try {
+            dataManagementService.scrapPurchaseMsg(map);
+            jsonObject.put("code",20000);
+            return jsonObject;
+
+        } catch (Exception e){
+            jsonObject.put("code",20001);
+            jsonObject.put("message",e.getMessage());
+            return jsonObject;
+        }
+
+    }
+
+    /**
+     * 采购单据收货
+     * @param map
+     * @return
+     */
+    @PostMapping("/receivePurchaseMsg")
+    public JSONObject receivePurchaseMsg(@RequestBody Map map){
+        JSONObject jsonObject = new JSONObject();
+        try{
+            dataManagementService.receivePurchaseMsg(map);
+            jsonObject.put("code",20000);
+            return jsonObject;
+        } catch (Exception e){
+            jsonObject.put("code",20001);
+            jsonObject.put("message",e.getMessage());
+            return jsonObject;
+        }
+    }
+
+    /**
+     * 检查iccid是否可以正常使用
+     * @return
+     */
+    @PostMapping("/checkIccid")
+    public JSONObject checkIccid(String iccid){
+        JSONObject jsonObject = new JSONObject();
+        if (StringUtils.isEmpty(iccid)){
+            jsonObject.put("code",20000);
+            jsonObject.put("result",false);
+            jsonObject.put("message","请检查iccid信息！");
+            return jsonObject;
+        } else {
+            CheckIccidResult checkIccidResult = dataManagementService.checkIccid(iccid);
+            if (!checkIccidResult.getResult()){
+                jsonObject.put("code",20000);
+                jsonObject.put("result",false);
+                jsonObject.put("message",checkIccidResult.getMessage());
+                return jsonObject;
+            } else {
+                jsonObject.put("code",20000);
+                jsonObject.put("result",true);
+                return jsonObject;
+            }
+        }
     }
 }

@@ -152,5 +152,116 @@
         values (#{equipmentMsg.equipmentBrand},#{equipmentMsg.equipmentTypeNum},#{equipmentMsg.size},#{equipmentMsg.status})
     </insert>
 
+    <!--List<CarType> getCarTypeMsg(@Param("type") String type);-->
+    <select id="getCarTypeMsg" resultType="carType">
+        select * from yd_sold_note.yd_receipts_car_type
+        <where>
+            <if test="type == 'on' ">
+                status == 1
+            </if>
+        </where>
+    </select>
 
+    <!--Integer insertCarType(@Param("carType") CarType carType);-->
+    <insert id="insertCarType" useGeneratedKeys="true" keyProperty="id">
+        insert into yd_sold_note.yd_receipts_car_type (brand, subsidiary, status)
+        values (#{carType.brand},#{carType.subsidiary},#{carType.status})
+    </insert>
+
+    <!--Integer getEquipmentMsgId(@Param("equipmentMsg") EquipmentMsg equipmentMsg);-->
+    <select id="getEquipmentMsgId" resultType="java.lang.Integer">
+        select id from yd_sold_note.yd_receipts_equipment_msg where equipment_brand = #{equipmentMsg.equipmentBrand} and equipment_type_num = #{equipmentMsg.equipmentTypeNum}
+        and size = #{equipmentMsg.size}
+    </select>
+
+    <!--Integer insertPurchaseMsg(@Param("purchaseMsg") PurchaseMsg purchaseMsg);-->
+    <insert id="insertPurchaseMsg" useGeneratedKeys="true" keyProperty="id">
+        insert into yd_sold_note.yd_receipts_equipment_purchase_msg (purchase_user_id, consignee_user_id, equipment_msg_id,count, purchase_time, status)
+        values (#{purchaseMsg.purchaseUserId},#{purchaseMsg.consigneeUserId},#{purchaseMsg.equipmentMsgId},#{purchaseMsg.count},#{purchaseMsg.purchaseTime},#{purchaseMsg.status})
+    </insert>
+
+    <!--PurchaseMsg getPurchaseMsgById(@Param("id") String id);-->
+    <select id="getPurchaseMsgById" resultType="purchaseMsg">
+        select * from yd_sold_note.yd_receipts_equipment_purchase_msg where id = #{id}
+    </select>
+
+    <!--Integer updatePurchaseMsgStatus(@Param("purchaseMsg") PurchaseMsg purchaseMsg);-->
+    <update id="updatePurchaseMsgStatus" useGeneratedKeys="true">
+        update yd_sold_note.yd_receipts_equipment_purchase_msg
+        <set>
+            <if test="purchaseMsg.status != null">
+                status = #{purchaseMsg.status}
+            </if>
+            <if test="purchaseMsg.arriveTime != null">
+                ,arrive_time = #{purchaseMsg.arriveTime}
+            </if>
+            <if test="purchaseMsg.scrapTime != null" >
+                ,scrap_time = #{purchaseMsg.scrapTime}
+            </if>
+        </set>
+        where id = #{purchaseMsg.id}
+    </update>
+
+    <!--List<PurchaseMsg> getPurchaseMsgByConsigneeUserId(@Param("id") Integer id);-->
+    <select id="getPurchaseMsgByConsigneeUserId" resultType="purchaseMsg">
+        select * from yd_sold_note.yd_receipts_equipment_purchase_msg where consignee_user_id = #{id}
+    </select>
+
+    <!--Integer updateInventoryMsg(@Param("inventoryMsg") InventoryMsg inventoryMsg);-->
+    <update id="updateInventoryMsg" useGeneratedKeys="true">
+        update yd_sold_note.yd_receipts_equipment_inventory
+        <set>
+            <if test="inventoryMsg.awaitInstall != null">
+                await_install = await_install + #{inventoryMsg.awaitInstall},
+            </if>
+            <if test="inventoryMsg.inPurchase != null">
+                in_purchase = in_purchase + #{inventoryMsg.inPurchase},
+            </if>
+            <if test="inventoryMsg.inMaintain != null">
+                in_maintain = in_maintain + #{inventoryMsg.inMaintain},
+            </if>
+            <if test="inventoryMsg.inInventory != null">
+                in_inventory = in_inventory + #{inventoryMsg.inInventory},
+            </if>
+            <if test="inventoryMsg.awaitReceive != null">
+                await_receive = await_receive + #{inventoryMsg.awaitReceive}
+            </if>
+        </set>
+        where third_party_terrace_id = #{inventoryMsg.thirdPartyTerraceId} and equipment_msg_id = #{inventoryMsg.equipmentMsgId}
+    </update>
+
+    <!--Integer insertInventoryMsg(@Param("inventoryMsg") InventoryMsg inventoryMsg);-->
+    <insert id="insertInventoryMsg" >
+        insert into yd_sold_note.yd_receipts_equipment_inventory
+        (third_party_terrace_id, equipment_msg_id,await_install, in_purchase, in_maintain, in_inventory, await_receive)
+        values
+        (#{inventoryMsg.thirdPartyTerraceId},#{inventoryMsg.equipmentMsgId},#{inventoryMsg.awaitInstall},#{inventoryMsg.inPurchase},
+        #{inventoryMsg.inMaintain},#{inventoryMsg.inInventory},#{inventoryMsg.awaitReceive})
+    </insert>
+
+    <!--Integer getIccid(@Param("iccid") String iccid);-->
+    <select id="getIccid" resultType="java.lang.Integer">
+        select count(*) from yd_sold_note.yd_receipts_iccid where iccid like #{iccid} and status = 1
+    </select>
+
+    <!--List<Iccid> getIccidsByStatus(@Param("status") int status);-->
+    <select id="getIccidsByStatus" resultType="iccid">
+        select * from yd_sold_note.yd_receipts_iccid where
+        <if test="status == 1 || status == 0">
+            iccid = #{status}
+        </if>
+        <if test="status == 3">
+            iccid = 1 and iccid = 0
+        </if>
+    </select>
+
+    <!--String getIccidByiccid(@Param("s") String s);-->
+    <select id="getIccidByiccid" resultType="java.lang.String">
+        select iccid from yd_sold_note.yd_receipts_iccid where iccid like #{s}
+    </select>
+
+    <!--Integer updateIccid(@Param("i") Iccid iccid2);-->
+    <update id="updateIccid" useGeneratedKeys="true">
+        update yd_sold_note.yd_receipts_iccid set status = #{i.status} where iccid = #{i.iccid}
+    </update>
 </mapper>

@@ -48,6 +48,7 @@ public class CarReceipts {
     private String gatheringType;
     private Integer gatheringMsgId;
     private String cancellationTime;
+    private String collectionTime;
 
     // 其他数据
     //收款信息数据
