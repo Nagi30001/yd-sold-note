@@ -179,9 +179,8 @@
                   and create_time &lt; #{queryCRMsg.endDate}
               </if>
           </if>
-
-
       </where>
+        limit #{queryCRMsg.page},#{queryCRMsg.count}
     </select>
 
     <!--Integer updateCarReceipts(@Param("s") CarReceipts carReceipts1);-->

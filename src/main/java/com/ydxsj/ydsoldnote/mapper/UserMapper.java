@@ -20,10 +20,10 @@ public interface UserMapper {
 
     /**
      * 根据账号查询用户
-     * @param jobName
+     * @param jobNum
      * @return
      */
-    User selectUserByJobName(Integer jobName);
+    User selectUserByJobNum(Integer jobNum);
 
 
     /**
@@ -53,7 +53,7 @@ public interface UserMapper {
      * @param jobNum
      * @return
      */
-    Integer selectUserByJobNum(@Param("jobNum") int jobNum);
+    Integer selectUserCountByJobNum(@Param("jobNum") int jobNum);
 
 
     /**
@@ -92,4 +92,10 @@ public interface UserMapper {
      * @return
      */
     Integer updateUserMsg(@Param("user") User user1);
+
+    /**
+     * 获取全部用户信息
+     * @return
+     */
+    List<User> allUser();
 }

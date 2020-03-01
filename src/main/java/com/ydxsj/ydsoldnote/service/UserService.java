@@ -3,10 +3,10 @@ package com.ydxsj.ydsoldnote.service;
 import com.ydxsj.ydsoldnote.bean.data.Province;
 import com.ydxsj.ydsoldnote.bean.role.Role;
 import com.ydxsj.ydsoldnote.bean.user.User;
-import com.ydxsj.ydsoldnote.bean.user.UserToken;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface UserService {
 
@@ -22,21 +22,21 @@ public interface UserService {
      * @param userId
      * @return
      */
-    UserToken saveToken(Integer userId);
+    String saveToken(Integer userId);
 
     /**
-     * 根据token查询token数据
+     * 根据token查询 id
      * @param token
      * @return
      */
-    UserToken queryByToken(String token);
+    Integer queryByToken(String token);
 
     /**
      * 根据账户名查询用户
      * @param jobName
      * @return
      */
-    User getUserByJobName(String jobName);
+    User getUserByJobNum(String jobName);
 
     /**
      * 根据token获取用户信息
@@ -119,4 +119,10 @@ public interface UserService {
      * @param map
      */
     void updatePassword(Map map);
+
+    /**
+     * 根据 user 获取 省份权限 ids
+     * @return
+     */
+    Set<Integer> getProvincesByUser(User user);
 }

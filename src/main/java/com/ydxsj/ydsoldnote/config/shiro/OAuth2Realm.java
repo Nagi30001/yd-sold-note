@@ -1,17 +1,16 @@
 package com.ydxsj.ydsoldnote.config.shiro;
 
-import com.ydxsj.ydsoldnote.bean.user.User;
-import com.ydxsj.ydsoldnote.bean.user.UserToken;
 import com.ydxsj.ydsoldnote.bean.role.RolePermission;
+import com.ydxsj.ydsoldnote.bean.user.User;
 import com.ydxsj.ydsoldnote.service.RoleService;
 import com.ydxsj.ydsoldnote.service.UserService;
+import com.ydxsj.ydsoldnote.util.JedisUtil.UserJedisUtil;
 import org.apache.shiro.authc.*;
 import org.apache.shiro.authz.AuthorizationInfo;
 import org.apache.shiro.authz.SimpleAuthorizationInfo;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.expression.ParseException;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
@@ -85,25 +84,32 @@ public class OAuth2Realm extends AuthorizingRealm {
         String accessToken = (String) token.getPrincipal();
 
         //根据accessToken，查询用户信息
-        UserToken userToken = userService.queryByToken(accessToken);
+        Integer id = userService.queryByToken(accessToken);
+
         //token失效
         SimpleDateFormat sm = new SimpleDateFormat("yyyyMMddHHmmss");
         Long expireTime;
         boolean flag = true;
-        try {
-//            expireTime     = sm.parse(managerToken.getExpireTime());
-            expireTime = userToken.getExpireTime();
-            flag = userToken == null || expireTime < System.currentTimeMillis();
-        } catch (ParseException e) {
-            e.printStackTrace();
+        if (id == null){
+            flag = true;
+        } else {
+            flag = false;
         }
+//        try {
+////            expireTime     = sm.parse(managerToken.getExpireTime());
+//            expireTime = userToken.getExpireTime();
+//            flag = userToken == null || expireTime < System.currentTimeMillis();
+//        } catch (ParseException e) {
+//            e.printStackTrace();
+//        }
 
         if(flag){
             throw new IncorrectCredentialsException("token失效，请重新登录");
         }
 
         //查询用户信息
-        User user = userService.getUserById(userToken.getUserId());
+//        User user = userService.getUserById(id);
+        User user = UserJedisUtil.getUserById(id);
         //账号锁定
         // if(managerInfo.getStatus() == 0){
         //     throw new LockedAccountException("账号已被锁定,请联系管理员");

@@ -13,6 +13,10 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
+
+
+
+
     private Integer id;
     private Integer jobNum;
     private String jobPassword;
