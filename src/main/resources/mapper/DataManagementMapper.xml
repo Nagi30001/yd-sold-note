@@ -318,4 +318,20 @@
     <select id="getAllCarType" resultType="carType">
         select * from yd_receipts_car_type
     </select>
+
+    <!--List<Province> getProvinceByIds(@Param("ids") Set<Integer> ids);-->
+    <select id="getProvinceByIds" resultType="province">
+        select * from yd_sold_note.yd_receipts_province where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")" index="index" >
+            #{id}
+        </foreach>
+    </select>
+
+    <!--List<Channel> getChannelByProvinces(@Param("provinces") List<Province> provinces);-->
+    <select id="getChannelByProvinces" resultType="channel">
+        select * from yd_sold_note.yd_receipts_channel where province in
+        <foreach collection="provinces" item="province" open="(" separator="," close=")" index="index" >
+            #{province.province}
+        </foreach>
+    </select>
 </mapper>

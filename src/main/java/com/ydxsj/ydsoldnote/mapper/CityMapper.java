@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Set;
 
 @Mapper
 public interface CityMapper {
@@ -52,4 +53,11 @@ public interface CityMapper {
      * @return
      */
     List<City> getCitysByProvinceIds(@Param("provinceIds") List<String> provinceIds);
+
+    /**
+     * 根据 ids 查询对呀的省份信息
+     * @param ids
+     * @return
+     */
+    List<Province> getProvinceByIds(@Param("ids") Set<Integer> ids);
 }

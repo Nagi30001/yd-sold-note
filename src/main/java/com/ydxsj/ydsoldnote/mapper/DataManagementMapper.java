@@ -325,4 +325,11 @@ public interface DataManagementMapper {
      * @return
      */
     List<CarType> getAllCarType();
+
+    /**
+     * 根据省份信息获取对呀的渠道信息
+     * @param provinces
+     * @return
+     */
+    List<Channel> getChannelByProvinces(@Param("provinces") List<Province> provinces);
 }

@@ -11,8 +11,12 @@ import com.ydxsj.ydsoldnote.service.DataManagementService;
 import com.ydxsj.ydsoldnote.service.UserService;
 import com.ydxsj.ydsoldnote.service.UserUtil;
 import com.ydxsj.ydsoldnote.util.JedisUtil.CityJedisUtil;
+import com.ydxsj.ydsoldnote.util.JedisUtil.DMJedisUtil;
 import com.ydxsj.ydsoldnote.util.JedisUtil.UserJedisUtil;
+import com.ydxsj.ydsoldnote.util.PublicUtil;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.omg.PortableInterceptor.INACTIVE;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,178 +48,274 @@ public class DataManagementServiceImpl implements DataManagementService {
 
 
     @Override
-    public List<CarType> getCarType() {
-        List<CarType> carTypes = dataManagementMapper.getCarType();
-        for (CarType carType : carTypes){
-            carType.setSubsidiarys(carType.getSubsidiary().split(","));
+    public List<CarType> getCarType() throws RuntimeException {
+        List<CarType> carTypes = DMJedisUtil.getCarBrandAndSubBrand();
+        if (CollectionUtils.isEmpty(carTypes)){
+            // no cache
+            carTypes = dataManagementMapper.getCarType();
+            for (CarType carType : carTypes){
+                carType.setSubsidiarys(carType.getSubsidiary().split(","));
+            }
+            // cache
+            DMJedisUtil.initializationCarBrandAndCarSubBrand(carTypes);
         }
-
         return carTypes;
+
     }
 
     @Override
-    public List<SellType> getSellTypes() {
-        return dataManagementMapper.getSellTypes();
-    }
-
-    @Override
-    public List<Addition> getAdditions() {
-        return dataManagementMapper.getAdditions();
-    }
-
-    @Override
-    public List<Channel> getChannelMsgs(String token) {
-        if (StringUtils.isEmpty(token)){
-            return null;
+    public List<SellType> getSellTypes() throws RuntimeException {
+        List<SellType> sellTypes = DMJedisUtil.getSellType();
+        if (CollectionUtils.isEmpty(sellTypes)){
+            // no cache
+            sellTypes = dataManagementMapper.getSellTypes();
+            // cache
+            DMJedisUtil.initializationSellType(sellTypes);
         }
-        //获取用户信息
-        User user = userMapper.selectUserById(userTokenMapper.getUserIdByToken(token));
+        return sellTypes;
+    }
+
+    @Override
+    public List<Addition> getAdditions() throws RuntimeException {
+        List<Addition> addition = DMJedisUtil.getAddition();
+        if (CollectionUtils.isEmpty(addition)){
+            // no cache
+            addition = dataManagementMapper.getAdditions();
+            // cache
+            DMJedisUtil.initializationAddition(addition);
+        }
+        return addition;
+    }
+
+    @Override
+    public List<Channel> getChannelMsgs(String token) throws RuntimeException {
+        // 获取省份信息
+        List<Province> provinces = getProvinces(token);
         //根据用户所在的省份权限查出该省份的渠道
-        List<String> provinceIds = Arrays.asList(user.getBeProvince().split("-"));
-        List<String> provinces = cityMapper.getProvinceById(provinceIds);
-        List<Channel> channels = dataManagementMapper.getChannelByProvince(provinces);
+        List<Channel> channels = DMJedisUtil.getChannelByProvinces(provinces);
+        if (CollectionUtils.isEmpty(channels)){
+            // no cache
+            channels = dataManagementMapper.getChannelByProvinces(provinces);
+            // channel cache
+            List<Channel> channelList = dataManagementMapper.getChannel();
+            DMJedisUtil.initializationChannel(channelList);
+        }
         for (Channel channel : channels){
-            channel.setUser(userMapper.selectUserById(channel.getCreateId()));
+            channel.setUser(UserJedisUtil.getUserById(channel.getCreateId()));
         }
         return channels;
     }
 
     @Override
-    public List<Province> getProvinces(String token) {
-        Integer id = UserJedisUtil.getUserIdByToken(token);
-        User user = UserJedisUtil.getUserById(id);
-        Set<Integer> ids = userService.getProvincesByUser(user);
-        return CityJedisUtil.getProvinceByIds(ids);
-        //获取用户信息
-//        return userUtil.getProvincesByToken(token);
+    public List<Province> getProvinces(String token) throws RuntimeException {
+        if (StringUtils.isEmpty(token)){
+            return null;
+        }
+        User user = UserJedisUtil.getUserByToken(token);
+        Set<Integer> ids = CityJedisUtil.getUserProvinceIds(user);
+        List<Province> provinces = CityJedisUtil.getProvinceByIds(ids);
+        if (CollectionUtils.isEmpty(provinces)){
+            // no cache
+            provinces = cityMapper.getProvinceByIds(ids);
+            // 省份缓存初始化
+            CityJedisUtil.initialization();
+        }
+        return provinces;
+
     }
 
     @Override
-    public List<City> getCitysByProvinces(List<Province> provinces) {
-//        List<String> provinceIds = new ArrayList<>();
-//        for (Province province : provinces){
-//            provinceIds.add(String.valueOf(province.getId()));
-//        }
-//        return cityMapper.getCitysByProvinceIds(provinceIds);
-        return CityJedisUtil.getCitiesByProvinces(provinces);
+    public List<City> getCitysByProvinces(List<Province> provinces) throws RuntimeException {
+
+        List<City> cities = CityJedisUtil.getCitiesByProvinces(provinces);
+        if (CollectionUtils.isEmpty(cities)){
+            // no cache
+            // cache
+            CityJedisUtil.initialization();
+            cities = CityJedisUtil.getCitiesByProvinces(provinces);
+        }
+        return cities;
     }
 
     @Override
-    public Channel addChannelMsg(String token, Map channelMsg) {
+    public Channel addChannelMsg(String token, Map channelMsg) throws RuntimeException {
+        return addOrUpdateChanel(token,channelMsg,true);
+    }
+
+    @Override
+    public Channel updateChannelMsg(String token, Map channelMsg) throws RuntimeException {
+        return addOrUpdateChanel(token,channelMsg,false);
+    }
+
+    /**
+     * 添加/更新渠道信息
+     * @param token
+     * @param channelMsg
+     * @param type
+     * @return
+     */
+    @Transactional
+    public Channel addOrUpdateChanel(String token,Map channelMsg, Boolean type) throws RuntimeException{
         //获取添加用户
-        User user = userUtil.getUserByToken(token);
+        User user = UserJedisUtil.getUserByToken(token);
         Channel channel = new Channel();
         channel.setProvince((String) channelMsg.get("province"));
         channel.setCity((String) channelMsg.get("city"));
         channel.setChannelName((String) channelMsg.get("channelName"));
         channel.setSite((String) channelMsg.get("site"));
-        channel.setStatus(1);
-        channel.setCreateId(user.getId());
-        channel.setUser(user);
-        Integer row = dataManagementMapper.addChannel(channel);
+        if (type){
+            // add
+            channel.setStatus(1);
+            channel.setCreateId(user.getId());
+            channel.setUser(user);
+            Integer row = dataManagementMapper.addChannel(channel);
+            if (!row.equals(1)){
+                throw  new RuntimeException("添加渠道信息错误！");
+            }
+            // add cache
+            DMJedisUtil.addChannel(channel);
+
+        } else {
+            // update
+            channel.setId((Integer) channelMsg.get("id"));
+            Channel oldChannel = DMJedisUtil.getChannelById(channel.getId());
+            if (oldChannel == null ){
+                // no cache
+                // cache
+                DMJedisUtil.initializationChannel(dataManagementMapper.getChannel());
+            }
+            Integer row = dataManagementMapper.updateChannel(channel);
+            if (!row.equals(1)){
+                throw  new RuntimeException("更新渠道信息错误！");
+            }
+            // update cache
+            DMJedisUtil.updateChannel(oldChannel,channel);
+        }
         return channel;
     }
 
     @Override
-    public Channel updateChannelMsg(String token, Map channelMsg) {
-        User user = userUtil.getUserByToken(token);
-        System.err.println(channelMsg);
-        Integer id = (Integer) channelMsg.get("id");
-        Channel channel = dataManagementMapper.getChannelById(id);
-        if (user == null || channel == null || user.getId() != channel.getCreateId()){
-            return null;
-        } else {
-            Channel channel1 = new Channel();
-            channel1.setId((Integer) channelMsg.get("id"));
-            channel1.setProvince((String) channelMsg.get("province"));
-            channel1.setCity((String) channelMsg.get("city"));
-            channel1.setChannelName((String) channelMsg.get("channelName"));
-            channel1.setSite((String) channelMsg.get("site"));
-
-            Integer row = dataManagementMapper.updateChannel(channel1);
+    public List<EquipmentMsg> getEquipmentMsg() throws RuntimeException{
+        List<EquipmentMsg> allEquipmentMsg = DMJedisUtil.getAllEquipmentMsg();
+        if (CollectionUtils.isEmpty(allEquipmentMsg)){
+            // no cache
+            allEquipmentMsg = dataManagementMapper.getEquipmentMsg();
+            // cache
+            DMJedisUtil.initializationEquipmentMsg(allEquipmentMsg);
         }
-
-        return null;
+        return allEquipmentMsg;
     }
 
     @Override
-    public List<EquipmentMsg> getEquipmentMsg() {
-        return dataManagementMapper.getEquipmentMsg();
-    }
-
-    @Override
-    public List<InventoryMsg> getInventoryMsgByTPId(User user, String type) {
+    public List<InventoryMsg> getInventoryMsgByTPId(User user, String type) throws RuntimeException {
+        List<InventoryMsg> inventoryMsg = null;
         if (PLATFORM_ABBREVIATION.equals(type)){
-            List<InventoryMsg> inventoryMsg = dataManagementMapper.getInventoryMsgByTPId(user.getId());
-            for (InventoryMsg inventoryMsg1 : inventoryMsg){
-                inventoryMsg1.setUser(userMapper.selectUserById(inventoryMsg1.getThirdPartyTerraceId()));
-                inventoryMsg1.setEquipmentMsg(dataManagementMapper.getEquipmentMsgById(inventoryMsg1.getEquipmentMsgId()));
+            inventoryMsg = DMJedisUtil.getInventoryMsgByTPId(user.getId());
+            if (CollectionUtils.isEmpty(inventoryMsg)){
+                // no cache
+                // cache
+                DMJedisUtil.initializationInventoryMsg(dataManagementMapper.getInventoryMsg());
+                inventoryMsg =  DMJedisUtil.getInventoryMsgByTPId(user.getId());
             }
-            return inventoryMsg;
         } else if (YOUDAO_ABBREVIATION.equals(type)){
-            // 获取这些全部用户id集合
-            List<String> ids = userUtil.getIds(user);
-
+            // 获取该用户区域权限内的用户信息
+            List<Province> provinces = CityJedisUtil.getBeProvincesByUser(user);
+            List<User> userList = UserJedisUtil.getUserByProvinces(provinces);
             // 根据ID集合查询所有该ID所属的库存信息
-            List<InventoryMsg> inventoryMsg = dataManagementMapper.getInventoryMsgByListIds(ids);
-            // 补充用户信息及设备型号信息
-            for (InventoryMsg inventoryMsg1 : inventoryMsg){
-                inventoryMsg1.setUser(userMapper.selectUserById(inventoryMsg1.getThirdPartyTerraceId()));
-                inventoryMsg1.setEquipmentMsg(dataManagementMapper.getEquipmentMsgById(inventoryMsg1.getEquipmentMsgId()));
+            inventoryMsg = DMJedisUtil.getInventoryMsgByTPIds(userList);
+            if (CollectionUtils.isEmpty(inventoryMsg)){
+                // no cache
+                // cache
+                DMJedisUtil.initializationInventoryMsg(dataManagementMapper.getInventoryMsg());
+                inventoryMsg =  DMJedisUtil.getInventoryMsgByTPIds(userList);
             }
-            return inventoryMsg;
-
         } else {
-            return new ArrayList<>();
+            return null;
         }
+        // 补充用户信息及设备型号信息
+        for (InventoryMsg inventoryMsg1 : inventoryMsg){
+            inventoryMsg1.setUser(UserJedisUtil.getUserById(inventoryMsg1.getThirdPartyTerraceId()));
+            EquipmentMsg equipmentMsg = DMJedisUtil.getEquipmentMsgById(inventoryMsg1.getEquipmentMsgId());
+            if (equipmentMsg == null){
+                // no cache
+                // cache
+                DMJedisUtil.initializationEquipmentMsg(dataManagementMapper.getEquipmentMsg());
+                equipmentMsg =  DMJedisUtil.getEquipmentMsgById(inventoryMsg1.getEquipmentMsgId());
+            }
+            inventoryMsg1.setEquipmentMsg(equipmentMsg);
+        }
+        return inventoryMsg;
 
     }
 
     @Override
-    public List<TransferMsg> getTransferMsgById(User user, String type) {
+    public List<TransferMsg> getTransferMsgById(User user, String type) throws RuntimeException {
         List<TransferMsg> transferMsg;
         if (PLATFORM_ABBREVIATION.equals(type)){
             // 安装平台
             // 发起人&收货人
-            transferMsg = dataManagementMapper.getTransferMsgByTPId(user.getId());
+            transferMsg = DMJedisUtil.getPTAndTransferMsg(user);
+            if (CollectionUtils.isEmpty(transferMsg)){
+                DMJedisUtil.initializationTransferMsg(dataManagementMapper.getTransferMsg());
+                transferMsg = DMJedisUtil.getPTAndTransferMsg(user);
+            }
         } else if (YOUDAO_ABBREVIATION.equals(type)){
             // 优道用户
             // 获取这些全部用户id集合
             List<String> ids = userUtil.getIds(user);
-            transferMsg = dataManagementMapper.getTransferMsgByIds(ids);
+            List<Province> provinces = CityJedisUtil.getBeProvincesByUser(user);
+            List<User> userList = UserJedisUtil.getUserByProvinces(provinces);
+            transferMsg = DMJedisUtil.getTransferMsgByUsers(userList);
+            if(CollectionUtils.isEmpty(transferMsg)){
+                DMJedisUtil.initializationTransferMsg(dataManagementMapper.getTransferMsg());
+                transferMsg = DMJedisUtil.getTransferMsgByUsers(userList);
+            }
         } else {
             return  new ArrayList<>();
         }
          // 补充信息，换格式
         for (TransferMsg transferMsg1 : transferMsg){
-            transferMsg1.setRequestUser(userMapper.selectUserById(transferMsg1.getRequestUserId()));
-            transferMsg1.setConsigneeUser(userMapper.selectUserById(transferMsg1.getConsigneeUserId()));
-            transferMsg1.setEquipmentMsg(dataManagementMapper.getEquipmentMsgById(transferMsg1.getEquipmentMsgId()));
-            transferMsg1.setRequestTime(getSdfTime(transferMsg1.getRequestTime()));
-            transferMsg1.setArriveTime(getSdfTime(transferMsg1.getArriveTime()));
-            transferMsg1.setScrapTime(getSdfTime(transferMsg1.getScrapTime()));
+            transferMsg1.setRequestUser(UserJedisUtil.getUserById(transferMsg1.getRequestUserId()));
+            transferMsg1.setConsigneeUser(UserJedisUtil.getUserById(transferMsg1.getConsigneeUserId()));
+            transferMsg1.setEquipmentMsg(getEquipmentMsgById(transferMsg1.getEquipmentMsgId()));
+            transferMsg1.setRequestTime(PublicUtil.timestampToString(transferMsg1.getRequestTime(),PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
+            transferMsg1.setArriveTime(PublicUtil.timestampToString(transferMsg1.getArriveTime(),PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
+            transferMsg1.setScrapTime(PublicUtil.timestampToString(transferMsg1.getScrapTime(),PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
         }
         return transferMsg;
     }
 
     @Override
-    public List<ChangeMsg> getChangeMsgByTPId(User user, String type) {
+    public List<ChangeMsg> getChangeMsgByTPId(User user, String type) throws RuntimeException {
         List<ChangeMsg> changeMsg;
         if (PLATFORM_ABBREVIATION.equals(type)){
-            changeMsg = dataManagementMapper.getChangeMsgById(user.getId());
+            changeMsg = DMJedisUtil.getChannelMsgByUser(user,true);
+            if (CollectionUtils.isEmpty(changeMsg)){
+                // no cache
+                // cache
+                DMJedisUtil.initializationChannel(dataManagementMapper.getChannel());
+                changeMsg = DMJedisUtil.getChannelMsgByUser(user,true);
+            }
         } else if(YOUDAO_ABBREVIATION.equals(type)){
-            List<String> ids = userUtil.getIds(user);
-            changeMsg = dataManagementMapper.getChangeMsgByIds(ids);
+            List<Province> provinces = CityJedisUtil.getBeProvincesByUser(user);
+            List<User> userList = UserJedisUtil.getUserByProvinces(provinces);
+            changeMsg = DMJedisUtil.getChannelMsgByUsers(userList);
+            if (CollectionUtils.isEmpty(changeMsg)){
+                // no cache
+                // cache
+                DMJedisUtil.initializationChannel(dataManagementMapper.getChannel());
+                changeMsg = DMJedisUtil.getChannelMsgByUsers(userList);
+            }
         } else {
             return new ArrayList<>();
         }
         for (ChangeMsg changeMsg1 : changeMsg){
-            changeMsg1.setRequestUser(userMapper.selectUserById(changeMsg1.getThirdPartyTerraceId()));
-            changeMsg1.setCheckUser(userMapper.selectUserById(changeMsg1.getCheckUserId()));
-            changeMsg1.setEquipmentMsg(dataManagementMapper.getEquipmentMsgById(changeMsg1.getEquipmentMsgId()));
-            changeMsg1.setRequestTime(getSdfTime(changeMsg1.getRequestTime()));
-            changeMsg1.setPassTime(getSdfTime(changeMsg1.getPassTime()));
-            changeMsg1.setCancellationTime(getSdfTime(changeMsg1.getCancellationTime()));
+            changeMsg1.setRequestUser(UserJedisUtil.getUserById(changeMsg1.getThirdPartyTerraceId()));
+            changeMsg1.setCheckUser(UserJedisUtil.getUserById(changeMsg1.getCheckUserId()));
+            changeMsg1.setEquipmentMsg(getEquipmentMsgById(changeMsg1.getEquipmentMsgId()));
+            changeMsg1.setRequestTime(PublicUtil.timestampToString(changeMsg1.getRequestTime(),PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
+            changeMsg1.setPassTime(PublicUtil.timestampToString(changeMsg1.getPassTime(),PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
+            changeMsg1.setCancellationTime(PublicUtil.timestampToString(changeMsg1.getCancellationTime(),PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
         }
         return changeMsg;
     }
@@ -224,15 +324,23 @@ public class DataManagementServiceImpl implements DataManagementService {
     public List<MaintainMsg> getMaintainMsg(User user, String type) {
         List<MaintainMsg> maintainMsg;
         if (YOUDAO_ABBREVIATION.equals(type)){
-            List<String> ids = userUtil.getIds(user);
-            maintainMsg = dataManagementMapper.getMaintainMsgByIds(ids);
+            List<Province> provinces = CityJedisUtil.getBeProvincesByUser(user);
+            List<User> userList = UserJedisUtil.getUserByProvinces(provinces);
+            maintainMsg = DMJedisUtil.getMaintainMgsByUsers(userList);
+            if (CollectionUtils.isEmpty(maintainMsg)){
+                // no cache
+                // cache
+                DMJedisUtil.initializationMaintainMsg(dataManagementMapper.getMaintainMsg());
+                maintainMsg = DMJedisUtil.getMaintainMgsByUsers(userList);
+            }
         } else {
             return null;
         }
         for (MaintainMsg maintainMsg1 : maintainMsg){
-            maintainMsg1.setRequestUser(userMapper.selectUserById(maintainMsg1.getRequestUserId()));
-            maintainMsg1.setConsigneeUser(userMapper.selectUserById(maintainMsg1.getConsigneeUserId()));
-            maintainMsg1.setEquipmentMsg(dataManagementMapper.getEquipmentMsgById(maintainMsg1.getEquipmentMsgId()));
+            maintainMsg1.setRequestUser(UserJedisUtil.getUserById(maintainMsg1.getRequestUserId()));
+            maintainMsg1.setConsigneeUser(UserJedisUtil.getUserById(maintainMsg1.getConsigneeUserId()));
+            maintainMsg1.setEquipmentMsg(getEquipmentMsgById(maintainMsg1.getEquipmentMsgId()));
+
             maintainMsg1.setRequestTime(getSdfTime(maintainMsg1.getRequestTime()));
             maintainMsg1.setArriveTime(getSdfTime(maintainMsg1.getArriveTime()));
             maintainMsg1.setScrapTime(getSdfTime(maintainMsg1.getScrapTime()));
@@ -506,4 +614,21 @@ public class DataManagementServiceImpl implements DataManagementService {
             return null;
         }
     }
+
+    /**
+     * 根据id获取对应的设备信息
+     * @param id
+     * @return
+     */
+    public EquipmentMsg getEquipmentMsgById(Integer id){
+        EquipmentMsg equipmentMsg = DMJedisUtil.getEquipmentMsgById(id);
+        if (equipmentMsg == null){
+            // no cache
+            // cache
+            DMJedisUtil.initializationEquipmentMsg(dataManagementMapper.getEquipmentMsg());
+            equipmentMsg =  DMJedisUtil.getEquipmentMsgById(id);
+        }
+        return equipmentMsg;
+    }
+
 }
