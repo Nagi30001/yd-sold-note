@@ -21,7 +21,7 @@ import java.util.List;
 @Component
 public class SellReceiptsJedisUtil {
 
-    private static JedisPoolUtil jedisPoolUtil = new JedisPoolUtil("49.234.210.89", 6379, "rk123321");
+    private static JedisPoolUtil jedisPoolUtil = new JedisPoolUtil();
     private static Jedis jedis = jedisPoolUtil.borrowJedis();
     private static SimpleDateFormat sdf = new SimpleDateFormat("YYYY-dd-MM");
     private static final String SELL_RECEIPTS_ID = "SELL_RECEIPTS_ID:";
