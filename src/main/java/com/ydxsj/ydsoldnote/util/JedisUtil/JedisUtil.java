@@ -3,9 +3,6 @@ package com.ydxsj.ydsoldnote.util.JedisUtil;
 import com.ydxsj.ydsoldnote.config.redis.JedisPoolUtil;
 
 
-import java.util.ResourceBundle;
-
-
 public class JedisUtil {
 
     public static String REDIS_HOST;

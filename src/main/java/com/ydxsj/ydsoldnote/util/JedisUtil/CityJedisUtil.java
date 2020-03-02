@@ -4,16 +4,13 @@ import com.alibaba.fastjson.JSON;
 import com.ydxsj.ydsoldnote.bean.data.City;
 import com.ydxsj.ydsoldnote.bean.data.Province;
 import com.ydxsj.ydsoldnote.bean.user.User;
-import com.ydxsj.ydsoldnote.config.redis.JedisPoolUtil;
 import com.ydxsj.ydsoldnote.mapper.CityMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import redis.clients.jedis.Jedis;
 
 import javax.annotation.PostConstruct;
-import javax.management.relation.RoleUnresolved;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -32,7 +29,6 @@ public class CityJedisUtil {
     static {
 
     }
-
 
 
     @PostConstruct
@@ -62,7 +58,7 @@ public class CityJedisUtil {
                     jedis.sadd(CITY + province.getProvince(), JSON.toJSONString(city));
                 }
             }
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("省市数据初始化失败!  #initialization");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -88,7 +84,7 @@ public class CityJedisUtil {
                 provinces.add(province);
             }
             return provinces;
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("获取全部省份信息失败! #all");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -113,7 +109,7 @@ public class CityJedisUtil {
                 cities.add(JSON.parseObject(str, City.class));
             }
             return cities;
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("获取城市信息失败！ #id");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -123,6 +119,7 @@ public class CityJedisUtil {
 
     /**
      * 根据省份 ids 获取城市信息
+     *
      * @param ids
      * @return
      */
@@ -134,12 +131,12 @@ public class CityJedisUtil {
             List<City> cities = new ArrayList<>();
             for (Integer id : ids) {
                 Set<String> list = jedis.smembers(CITY + id);
-                for (String str : list){
-                    cities.add(JSON.parseObject(str,City.class));
+                for (String str : list) {
+                    cities.add(JSON.parseObject(str, City.class));
                 }
             }
             return cities;
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("获取城市信息失败！ #ids");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -149,17 +146,18 @@ public class CityJedisUtil {
 
     /**
      * 根据省份 ids 获取城市信息
+     *
      * @param provinces
      * @return
      */
     public static List<City> getCitiesByProvinces(List<Province> provinces) {
         try {
             Set<Integer> ids = new HashSet<>();
-            for (Province province : provinces){
+            for (Province province : provinces) {
                 ids.add(province.getId());
             }
             return getCitiesByProvinceIds(ids);
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("获取城市信息失败！ #ids");
         }
 
@@ -184,7 +182,7 @@ public class CityJedisUtil {
                 }
             }
             return null;
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("获取省份信息失败！ #id");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -208,7 +206,7 @@ public class CityJedisUtil {
                 provinces.add(getProvinceById(id));
             }
             return provinces;
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("获取省份信息失败！ #ids");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -219,22 +217,23 @@ public class CityJedisUtil {
 
     /**
      * 将用户的区域权限集合转换成Set<Integer>集合
+     *
      * @param user
      * @return
      */
-    public static Set<Integer> getUserProvinceIds(User user){
+    public static Set<Integer> getUserProvinceIds(User user) {
         Set<Integer> set = new HashSet<>();
         String[] split = user.getBeProvince().split("-");
-        for (int i=0;i<split.length;i++){
+        for (int i = 0; i < split.length; i++) {
             set.add(Integer.valueOf(split[i]));
         }
         return set;
     }
 
-    public static List<Province> getBeProvincesByUser(User user){
+    public static List<Province> getBeProvincesByUser(User user) {
         Set<Integer> ids = getUserProvinceIds(user);
         List<Province> provinces = getProvinceByIds(ids);
-        if (CollectionUtils.isEmpty(provinces)){
+        if (CollectionUtils.isEmpty(provinces)) {
             // no cache
             provinces = cityJedisUtil.cityMapper.getProvinceByIds(ids);
             // 省份缓存初始化

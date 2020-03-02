@@ -6,36 +6,42 @@
 
     <!-- List<CarType> getCarType();  -->
     <select id="getCarType" resultType="carType">
-        select brand,group_concat(subsidiary) as subsidiary from yd_receipts_car_type group by brand;
+        select brand, group_concat(subsidiary) as subsidiary
+        from yd_receipts_car_type
+        group by brand;
     </select>
 
     <!-- List<SellType> getSellTypes();   -->
     <select id="getSellTypes" resultType="sellType">
-        select * from yd_sold_note.yd_receipts_sell_type
+        select *
+        from yd_sold_note.yd_receipts_sell_type
     </select>
 
     <!-- List<Addition> getAdditions();   -->
     <select id="getAdditions" resultType="addition">
-        select * from yd_sold_note.yd_receipts_addition
+        select *
+        from yd_sold_note.yd_receipts_addition
     </select>
 
     <!-- SellType getSellTypeById(Integer sellType);   -->
-    <select id="getSellTypeById" resultType="sellType" >
-        select * from yd_sold_note.yd_receipts_sell_type where id = #{sellType}
+    <select id="getSellTypeById" resultType="sellType">
+        select *
+        from yd_sold_note.yd_receipts_sell_type
+        where id = #{sellType}
     </select>
 
     <!--  List<Addition> getAdditionsById(Integer[] additionIds);  -->
     <select id="getAdditionsById" resultType="addition">
         select * from yd_sold_note.yd_receipts_addition where id in
-        <foreach collection="additionIds" item="additionId" open="(" separator="," close=")" index="index" >
+        <foreach collection="additionIds" item="additionId" open="(" separator="," close=")" index="index">
             #{additionId}
         </foreach>
     </select>
 
     <!-- List<Channel> getChannelByProvince(@Param("provinces") List<String> provinces);   -->
-    <select id="getChannelByProvince" resultType="channel" >
+    <select id="getChannelByProvince" resultType="channel">
         select * from yd_sold_note.yd_receipts_channel where province in
-        <foreach collection="provinces" item="province" open="(" separator="," close=")" index="index" >
+        <foreach collection="provinces" item="province" open="(" separator="," close=")" index="index">
             #{province}
         </foreach>
     </select>
@@ -43,33 +49,45 @@
     <!-- Integer addChannel(@Param("channel") Channel channel);   -->
     <insert id="addChannel" useGeneratedKeys="true" keyProperty="id">
         insert into yd_sold_note.yd_receipts_channel (province, city, channel_name, site, status, create_id)
-        values (#{channel.province},#{channel.city},#{channel.channelName},#{channel.site},#{channel.status},#{channel.createId})
+        values (#{channel.province}, #{channel.city}, #{channel.channelName}, #{channel.site}, #{channel.status},
+                #{channel.createId})
     </insert>
 
     <!-- Channel getChannelById(int id);   -->
     <select id="getChannelById" resultType="channel">
-        select * from yd_sold_note.yd_receipts_channel where id = #{id}
+        select *
+        from yd_sold_note.yd_receipts_channel
+        where id = #{id}
     </select>
 
     <!--  Integer updateChannel(@Param("channel") Channel channel1);  -->
     <select id="updateChannel">
-        update yd_sold_note.yd_receipts_channel set province = #{channel.province},city = #{channel.city},channel_name = #{channel.channelName},site = #{channel.site}
+        update yd_sold_note.yd_receipts_channel
+        set province     = #{channel.province},
+            city         = #{channel.city},
+            channel_name = #{channel.channelName},
+            site         = #{channel.site}
         where id = #{channel.id}
     </select>
 
     <!--  List<EquipmentMsg> getEquipmentMsg();  -->
     <select id="getEquipmentMsg" resultType="equipmentMsg">
-        select * from yd_sold_note.yd_receipts_equipment_msg
+        select *
+        from yd_sold_note.yd_receipts_equipment_msg
     </select>
 
     <!--  List<InventoryMsg> getInventoryMsgByTPId(@Param("id") Integer id);  -->
     <select id="getInventoryMsgByTPId" resultType="inventoryMsg">
-        select * from yd_sold_note.yd_receipts_equipment_inventory where third_party_terrace_id = #{id}
+        select *
+        from yd_sold_note.yd_receipts_equipment_inventory
+        where third_party_terrace_id = #{id}
     </select>
 
     <!--  EquipmentMsg getEquipmentMsgById(@Param("id") Integer equipmentMsgId);  -->
     <select id="getEquipmentMsgById" resultType="equipmentMsg">
-        select * from yd_sold_note.yd_receipts_equipment_msg where id = #{id}
+        select *
+        from yd_sold_note.yd_receipts_equipment_msg
+        where id = #{id}
     </select>
 
     <!--  List<InventoryMsg> getInventoryMsgByListIds(@Param("ids") List<Integer> ids);  -->
@@ -82,7 +100,10 @@
 
     <!--  List<TransferMsg> getTransferMsgByTPId(@Param("id") Integer id);  -->
     <select id="getTransferMsgByTPId" resultType="transferMsg">
-        select * from yd_sold_note.yd_receipts_equipment_transfer_msg where request_user_id = #{id} or consignee_user_id = #{id}
+        select *
+        from yd_sold_note.yd_receipts_equipment_transfer_msg
+        where request_user_id = #{id}
+           or consignee_user_id = #{id}
     </select>
 
     <!--  List<TransferMsg> getTransferMsgByIds(@Param("ids")List<Integer> ids);  -->
@@ -99,7 +120,9 @@
 
     <!--  List<ChangeMsg> getChangeMsgById(@Param("id")Integer id);  -->
     <select id="getChangeMsgById" resultType="changeMsg">
-        select * from yd_sold_note.yd_receipts_equipment_change_msg where third_party_terrace_id = #{id}
+        select *
+        from yd_sold_note.yd_receipts_equipment_change_msg
+        where third_party_terrace_id = #{id}
     </select>
 
     <!--  List<ChangeMsg> getChangeMsgByIds(@Param("ids")List<Integer> ids);  -->
@@ -108,10 +131,10 @@
         <foreach collection="ids" item="id" open="(" separator="," close=")" index="index">
             #{id}
         </foreach>
-<!--        or check_user_id in-->
-<!--        <foreach collection="ids" item="id" open="(" separator="," close=")" index="index">-->
-<!--            #{id}-->
-<!--        </foreach>-->
+        <!--        or check_user_id in-->
+        <!--        <foreach collection="ids" item="id" open="(" separator="," close=")" index="index">-->
+        <!--            #{id}-->
+        <!--        </foreach>-->
     </select>
 
     <!--  List<MaintainMsg> getMaintainMsgByIds(List<Integer> ids);  -->
@@ -120,10 +143,10 @@
         <foreach collection="ids" item="id" open="(" separator="," close=")" index="index">
             #{id}
         </foreach>
-<!--        or consignee_user_id in-->
-<!--        <foreach collection="ids" item="id" open="{" separator="," close=")" index="index">-->
-<!--            #{id}-->
-<!--        </foreach>-->
+        <!--        or consignee_user_id in-->
+        <!--        <foreach collection="ids" item="id" open="{" separator="," close=")" index="index">-->
+        <!--            #{id}-->
+        <!--        </foreach>-->
     </select>
 
     <!--  List<PurchaseMsg> getPurchaseMsgByIds(@Param("ids")List<Integer> ids);  -->
@@ -132,10 +155,10 @@
         <foreach collection="ids" item="id" open="(" separator="," close=")" index="index">
             #{id}
         </foreach>
-<!--        or consignee_user_id in-->
-<!--        <foreach collection="ids" item="id" open="{" separator="," close=")" index="index">-->
-<!--            #{id}-->
-<!--        </foreach>-->
+        <!--        or consignee_user_id in-->
+        <!--        <foreach collection="ids" item="id" open="{" separator="," close=")" index="index">-->
+        <!--            #{id}-->
+        <!--        </foreach>-->
     </select>
 
     <!--  List<ScrapMsg> getScrapMsgByIds(@Param("ids")List<Integer> ids);  -->
@@ -149,7 +172,8 @@
     <!--  Integer insertEquipmentMsg(@Param("equipmentMsg") EquipmentMsg equipmentMsg);  -->
     <insert id="insertEquipmentMsg" useGeneratedKeys="true" keyProperty="id">
         insert into yd_sold_note.yd_receipts_equipment_msg (equipment_brand, equipment_type_num, size, status)
-        values (#{equipmentMsg.equipmentBrand},#{equipmentMsg.equipmentTypeNum},#{equipmentMsg.size},#{equipmentMsg.status})
+        values (#{equipmentMsg.equipmentBrand}, #{equipmentMsg.equipmentTypeNum}, #{equipmentMsg.size},
+                #{equipmentMsg.status})
     </insert>
 
     <!--List<CarType> getCarTypeMsg(@Param("type") String type);-->
@@ -165,24 +189,31 @@
     <!--Integer insertCarType(@Param("carType") CarType carType);-->
     <insert id="insertCarType" useGeneratedKeys="true" keyProperty="id">
         insert into yd_sold_note.yd_receipts_car_type (brand, subsidiary, status)
-        values (#{carType.brand},#{carType.subsidiary},#{carType.status})
+        values (#{carType.brand}, #{carType.subsidiary}, #{carType.status})
     </insert>
 
     <!--Integer getEquipmentMsgId(@Param("equipmentMsg") EquipmentMsg equipmentMsg);-->
     <select id="getEquipmentMsgId" resultType="java.lang.Integer">
-        select id from yd_sold_note.yd_receipts_equipment_msg where equipment_brand = #{equipmentMsg.equipmentBrand} and equipment_type_num = #{equipmentMsg.equipmentTypeNum}
-        and size = #{equipmentMsg.size}
+        select id
+        from yd_sold_note.yd_receipts_equipment_msg
+        where equipment_brand = #{equipmentMsg.equipmentBrand}
+          and equipment_type_num = #{equipmentMsg.equipmentTypeNum}
+          and size = #{equipmentMsg.size}
     </select>
 
     <!--Integer insertPurchaseMsg(@Param("purchaseMsg") PurchaseMsg purchaseMsg);-->
     <insert id="insertPurchaseMsg" useGeneratedKeys="true" keyProperty="id">
-        insert into yd_sold_note.yd_receipts_equipment_purchase_msg (purchase_user_id, consignee_user_id, equipment_msg_id,count, purchase_time, status)
-        values (#{purchaseMsg.purchaseUserId},#{purchaseMsg.consigneeUserId},#{purchaseMsg.equipmentMsgId},#{purchaseMsg.count},#{purchaseMsg.purchaseTime},#{purchaseMsg.status})
+        insert into yd_sold_note.yd_receipts_equipment_purchase_msg (purchase_user_id, consignee_user_id,
+                                                                     equipment_msg_id, count, purchase_time, status)
+        values (#{purchaseMsg.purchaseUserId}, #{purchaseMsg.consigneeUserId}, #{purchaseMsg.equipmentMsgId},
+                #{purchaseMsg.count}, #{purchaseMsg.purchaseTime}, #{purchaseMsg.status})
     </insert>
 
     <!--PurchaseMsg getPurchaseMsgById(@Param("id") String id);-->
     <select id="getPurchaseMsgById" resultType="purchaseMsg">
-        select * from yd_sold_note.yd_receipts_equipment_purchase_msg where id = #{id}
+        select *
+        from yd_sold_note.yd_receipts_equipment_purchase_msg
+        where id = #{id}
     </select>
 
     <!--Integer updatePurchaseMsgStatus(@Param("purchaseMsg") PurchaseMsg purchaseMsg);-->
@@ -195,7 +226,7 @@
             <if test="purchaseMsg.arriveTime != null">
                 ,arrive_time = #{purchaseMsg.arriveTime}
             </if>
-            <if test="purchaseMsg.scrapTime != null" >
+            <if test="purchaseMsg.scrapTime != null">
                 ,scrap_time = #{purchaseMsg.scrapTime}
             </if>
         </set>
@@ -204,7 +235,9 @@
 
     <!--List<PurchaseMsg> getPurchaseMsgByConsigneeUserId(@Param("id") Integer id);-->
     <select id="getPurchaseMsgByConsigneeUserId" resultType="purchaseMsg">
-        select * from yd_sold_note.yd_receipts_equipment_purchase_msg where consignee_user_id = #{id}
+        select *
+        from yd_sold_note.yd_receipts_equipment_purchase_msg
+        where consignee_user_id = #{id}
     </select>
 
     <!--Integer updateInventoryMsg(@Param("inventoryMsg") InventoryMsg inventoryMsg);-->
@@ -227,21 +260,25 @@
                 await_receive = await_receive + #{inventoryMsg.awaitReceive}
             </if>
         </set>
-        where third_party_terrace_id = #{inventoryMsg.thirdPartyTerraceId} and equipment_msg_id = #{inventoryMsg.equipmentMsgId}
+        where third_party_terrace_id = #{inventoryMsg.thirdPartyTerraceId} and equipment_msg_id =
+        #{inventoryMsg.equipmentMsgId}
     </update>
 
     <!--Integer insertInventoryMsg(@Param("inventoryMsg") InventoryMsg inventoryMsg);-->
-    <insert id="insertInventoryMsg" >
+    <insert id="insertInventoryMsg">
         insert into yd_sold_note.yd_receipts_equipment_inventory
-        (third_party_terrace_id, equipment_msg_id,await_install, in_purchase, in_maintain, in_inventory, await_receive)
-        values
-        (#{inventoryMsg.thirdPartyTerraceId},#{inventoryMsg.equipmentMsgId},#{inventoryMsg.awaitInstall},#{inventoryMsg.inPurchase},
-        #{inventoryMsg.inMaintain},#{inventoryMsg.inInventory},#{inventoryMsg.awaitReceive})
+        (third_party_terrace_id, equipment_msg_id, await_install, in_purchase, in_maintain, in_inventory, await_receive)
+        values (#{inventoryMsg.thirdPartyTerraceId}, #{inventoryMsg.equipmentMsgId}, #{inventoryMsg.awaitInstall},
+                #{inventoryMsg.inPurchase},
+                #{inventoryMsg.inMaintain}, #{inventoryMsg.inInventory}, #{inventoryMsg.awaitReceive})
     </insert>
 
     <!--Integer getIccid(@Param("iccid") String iccid);-->
     <select id="getIccid" resultType="java.lang.Integer">
-        select count(*) from yd_sold_note.yd_receipts_iccid where iccid like #{iccid} and status = 1
+        select count(*)
+        from yd_sold_note.yd_receipts_iccid
+        where iccid like #{iccid}
+          and status = 1
     </select>
 
     <!--List<Iccid> getIccidsByStatus(@Param("status") int status);-->
@@ -257,72 +294,92 @@
 
     <!--String getIccidByiccid(@Param("s") String s);-->
     <select id="getIccidByiccid" resultType="java.lang.String">
-        select iccid from yd_sold_note.yd_receipts_iccid where iccid like #{s}
+        select iccid
+        from yd_sold_note.yd_receipts_iccid
+        where iccid like #{s}
     </select>
 
     <!--Integer updateIccid(@Param("i") Iccid iccid2);-->
     <update id="updateIccid" useGeneratedKeys="true">
-        update yd_sold_note.yd_receipts_iccid set status = #{i.status} where iccid = #{i.iccid}
+        update yd_sold_note.yd_receipts_iccid
+        set status = #{i.status}
+        where iccid = #{i.iccid}
     </update>
 
     <!--  Integer getEquipmentMsgByMsg(@Param("equipmentBrand") String equipmentBrand,@Param("equipmentTypeNum") String equipmentTypeNum,@Param("size") String size);  -->
     <select id="getEquipmentMsgByMsg" resultType="java.lang.Integer">
-        select id from yd_receipts_equipment_msg where  equipment_brand = #{equipmentBrand} and equipment_type_num = #{equipmentTypeNum} and size = #{size}
+        select id
+        from yd_receipts_equipment_msg
+        where equipment_brand = #{equipmentBrand}
+          and equipment_type_num = #{equipmentTypeNum}
+          and size = #{size}
     </select>
     <!--  SellType getSellTypeByName(@Param("sellTypeName") String sellTypeName);  -->
     <select id="getSellTypeByName" resultType="sellType">
-        select * from yd_receipts_sell_type where sell_type = #{sellTypeName}
+        select *
+        from yd_receipts_sell_type
+        where sell_type = #{sellTypeName}
     </select>
 
     <!--Addition getAdditionsByName(@Param("str") String str);    -->
     <select id="getAdditionsByName" resultType="addition">
-        select * from yd_receipts_addition where addition_name = #{str}
+        select *
+        from yd_receipts_addition
+        where addition_name = #{str}
     </select>
 
     <!-- List<Channel> getChannel();   -->
     <select id="getChannel" resultType="channel">
-        select *  from yd_receipts_channel
+        select *
+        from yd_receipts_channel
     </select>
 
     <!-- List<InventoryMsg> getInventoryMsg();   -->
     <select id="getInventoryMsg" resultType="inventoryMsg">
-        select * from yd_receipts_equipment_inventory
+        select *
+        from yd_receipts_equipment_inventory
     </select>
 
     <!--    List<PurchaseMsg> getPurchaseMsg();-->
     <select id="getPurchaseMsg" resultType="purchaseMsg">
-        select * from yd_receipts_equipment_purchase_msg
+        select *
+        from yd_receipts_equipment_purchase_msg
     </select>
 
     <!-- List<ScrapMsg> getScrapMsg();   -->
     <select id="getScrapMsg" resultType="scrapMsg">
-        select * from yd_receipts_equipment_scrap_msg
+        select *
+        from yd_receipts_equipment_scrap_msg
     </select>
 
     <!--  List<ChangeMsg> getChangeMsg();  -->
     <select id="getChangeMsg" resultType="changeMsg">
-        select * from yd_receipts_equipment_change_msg
+        select *
+        from yd_receipts_equipment_change_msg
     </select>
 
     <!-- List<MaintainMsg> getMaintainMsg();   -->
     <select id="getMaintainMsg" resultType="maintainMsg">
-        select * from yd_receipts_equipment_maintain_msg
+        select *
+        from yd_receipts_equipment_maintain_msg
     </select>
 
     <!-- List<TransferMsg> getTransferMsg();   -->
     <select id="getTransferMsg" resultType="transferMsg">
-        select * from yd_receipts_equipment_transfer_msg
+        select *
+        from yd_receipts_equipment_transfer_msg
     </select>
 
     <!--  List<CarType> getAllCarType();  -->
     <select id="getAllCarType" resultType="carType">
-        select * from yd_receipts_car_type
+        select *
+        from yd_receipts_car_type
     </select>
 
     <!--List<Province> getProvinceByIds(@Param("ids") Set<Integer> ids);-->
     <select id="getProvinceByIds" resultType="province">
         select * from yd_sold_note.yd_receipts_province where id in
-        <foreach collection="ids" item="id" open="(" separator="," close=")" index="index" >
+        <foreach collection="ids" item="id" open="(" separator="," close=")" index="index">
             #{id}
         </foreach>
     </select>
@@ -330,8 +387,29 @@
     <!--List<Channel> getChannelByProvinces(@Param("provinces") List<Province> provinces);-->
     <select id="getChannelByProvinces" resultType="channel">
         select * from yd_sold_note.yd_receipts_channel where province in
-        <foreach collection="provinces" item="province" open="(" separator="," close=")" index="index" >
+        <foreach collection="provinces" item="province" open="(" separator="," close=")" index="index">
             #{province.province}
         </foreach>
+    </select>
+
+    <!-- InventoryMsg getInventoryMsgById(@Param("id") Integer id);   -->
+    <select id="getInventoryMsgById" resultType="inventoryMsg">
+        select *
+        from yd_receipts_equipment_inventory
+        where id = #{id}
+    </select>
+
+    <!-- InventoryMsg getInventoryMsgByEquipmentMsgIdAndUserId(@Param("equipmentMsgId") Integer equipmentMsgId, @Param("userId") Integer valueOf);   -->
+    <select id="getInventoryMsgByEquipmentMsgIdAndUserId" resultType="inventoryMsg">
+        select *
+        from yd_receipts_equipment_inventory
+        where equipment_msg_id = #{equipmentMsgId}
+          and third_party_terrace_id = #{userId}
+    </select>
+
+    <!-- List<Iccid> getAllIccid();   -->
+    <select id="getAllIccid" resultType="iccid">
+        select *
+        from yd_receipts_iccid
     </select>
 </mapper>
