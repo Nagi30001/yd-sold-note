@@ -17,7 +17,7 @@ import java.util.List;
 @Component
 public class DMJedisUtil {
 
-    private static JedisPoolUtil jedisPoolUtil = new JedisPoolUtil("49.234.210.89", 6379, "rk123321");
+    private static JedisPoolUtil jedisPoolUtil = new JedisPoolUtil();
     private static Jedis jedis = jedisPoolUtil.borrowJedis();
 
     private static final String DATA_CHANNEL_ID = "DATA_CHANNEL_ID:";
