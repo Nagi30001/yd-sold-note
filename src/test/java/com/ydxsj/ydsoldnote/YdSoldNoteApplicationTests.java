@@ -1,17 +1,17 @@
 package com.ydxsj.ydsoldnote;
 
-import com.ydxsj.ydsoldnote.bean.role.RolePermission;
+import com.ydxsj.ydsoldnote.bean.user.User;
 import com.ydxsj.ydsoldnote.mapper.RoleMapper;
+import com.ydxsj.ydsoldnote.mapper.UserMapper;
 import com.ydxsj.ydsoldnote.mapper.UserTokenMapper;
-import org.apache.commons.collections.CollectionUtils;
+import com.ydxsj.ydsoldnote.service.UserService;
+import com.ydxsj.ydsoldnote.util.JedisUtil.UserJedisUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 @RunWith(SpringRunner.class)
@@ -22,20 +22,25 @@ public class YdSoldNoteApplicationTests {
     private UserTokenMapper userTokenMapper;
     @Autowired
     private RoleMapper roleMapper;
+    @Autowired
+    private UserMapper userMapper;
+    @Autowired
+    private UserService userService;
     @Test
     public void contextLoads() {
-//        List<RolePermission> r1001 = roleMapper.getPermissionByUserRole("R1005");
-//        System.err.println(r1001.toString());
-        List<String> a = new ArrayList<>();
-        List<String> b = new ArrayList<>();
-        a.add("abc");
-        a.add("bcd");
-        a.add("aaa");
-        b.add("bcd");
-        b.add("abc");
-        b.add("ccc");
-        System.err.println(CollectionUtils.isSubCollection(a,b));
+//        User user = UserJedisUtil.getUserById(2);
+//
+//        System.err.println(user);
+        User user = userMapper.selectUserById(2);
+        UserJedisUtil.addUser(user);
+
 
     }
 
+    @Test
+    public void test1() {
+        List<User> usersByType = userService.getUsersByType("c875306d309c6f422c315e70ef02c950", "yd");
+        System.err.println(usersByType);
+
+    }
 }

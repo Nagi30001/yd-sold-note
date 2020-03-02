@@ -49,6 +49,7 @@ public class CarReceipts {
     private Integer gatheringMsgId;
     private String cancellationTime;
     private String collectionTime;
+    private String refundTime;
 
     // 其他数据
     //收款信息数据

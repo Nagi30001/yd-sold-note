@@ -1,4 +1,5 @@
 spring:
+  # 数据库
   datasource:
     url: jdbc:mysql://49.234.210.89:3306/yd_sold_note?characterEncoding=UTF-8
 
@@ -29,7 +30,16 @@ spring:
 #    maxPoolPreparedStatementPerConnectionSize: 20
 #    useGlobalDataSourceStat: true
 #    connectionProperties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=500
-
+  redis:
+#    host: 49.234.210.89
+    jedis:
+      pool:
+        max-active: 1024
+        max-wait: 10000
+        max-idle: 200
+        min-idle: 0
+    timeout: 10000
+    password: 123456
 server:
   port: 8090
 
@@ -52,3 +62,6 @@ logging:
       ydxsj: debug
 
 uploadDir: /data/images/cms-picture/
+
+
+#redis

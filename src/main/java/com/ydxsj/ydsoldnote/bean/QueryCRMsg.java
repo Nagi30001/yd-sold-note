@@ -26,4 +26,6 @@ public class QueryCRMsg {
     private List<User> users;
     private List<String> provinces;
     private Integer status;
+    private Integer page;
+    private Integer count;
 }

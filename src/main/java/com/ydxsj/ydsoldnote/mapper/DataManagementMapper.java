@@ -4,7 +4,6 @@ import com.ydxsj.ydsoldnote.bean.data.*;
 import com.ydxsj.ydsoldnote.bean.data.equipment.*;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -255,4 +254,75 @@ public interface DataManagementMapper {
      * @return
      */
     Integer updateIccid(@Param("i") Iccid iccid2);
+
+    /**
+     * 根据三个信息获取设备id
+     * @param equipmentBrand
+     * @param equipmentTypeNum
+     * @param size
+     * @return
+     */
+    Integer getEquipmentMsgByMsg(@Param("equipmentBrand") String equipmentBrand,@Param("equipmentTypeNum") String equipmentTypeNum,@Param("size") String size);
+
+    /**
+     * 根据销售名称获取销售信息
+     * @param sellTypeName
+     * @return
+     */
+    SellType getSellTypeByName(@Param("sellTypeName") String sellTypeName);
+
+    /**
+     * 根据 name 获取附加业务信息
+     * @param str
+     * @return
+     */
+    Addition getAdditionsByName(@Param("str") String str);
+
+    /**
+     * 获取全部渠道信息
+     * @return
+     */
+    List<Channel> getChannel();
+
+    /**
+     * 获取全部库存信息
+     * @return
+     */
+    List<InventoryMsg> getInventoryMsg();
+
+    /**
+     * 获取全部采购信息
+     * @return
+     */
+    List<PurchaseMsg> getPurchaseMsg();
+
+    /**
+     * 获取全部报废信息
+     * @return
+     */
+    List<ScrapMsg> getScrapMsg();
+
+    /**
+     * 获取全部更换记录
+     * @return
+     */
+    List<ChangeMsg> getChangeMsg();
+
+    /**
+     * 获取全部维修记录
+     * @return
+     */
+    List<MaintainMsg> getMaintainMsg();
+
+    /**
+     * 获取全部转移记录
+     * @return
+     */
+    List<TransferMsg> getTransferMsg();
+
+    /**
+     * 获取全部车型
+     * @return
+     */
+    List<CarType> getAllCarType();
 }

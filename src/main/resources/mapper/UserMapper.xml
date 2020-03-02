@@ -9,15 +9,17 @@
         select * from yd_receipts_yd_user where id = #{userId}
     </select>
 
-    <!-- User selectUserByJobName(String jobName);       -->
-    <select id="selectUserByJobName" resultType="user">
-        select * from yd_receipts_yd_user where job_num = #{jobName}
+    <!-- User selectUserByJobNum(String jobNum);       -->
+    <select id="selectUserByJobNum" resultType="user">
+        select * from yd_receipts_yd_user where job_num = #{jobNum}
     </select>
 
     <!--  List<User> selectUserByRole(String role);  -->
     <select id="selectUserByRole" resultType="user">
         select * from yd_sold_note.yd_receipts_yd_user where role_num = #{role} order by job_num desc
     </select>
+
+
 
     <!--  List<User> getUsersByProvince(@Param("provinces") List<String> provinces,@Param("type") String type);  -->
     <select id="getUsersByProvince" resultType="user">
@@ -44,8 +46,8 @@
         </where>
     </select>
 
-    <!--  Integer selectUserByJobNum(@Param("jobNum") String jobNum);  -->
-    <select id="selectUserByJobNum"  resultType="java.lang.Integer">
+    <!--  Integer selectUserCountByJobNum(@Param("jobNum") String jobNum);  -->
+    <select id="selectUserCountByJobNum"  resultType="java.lang.Integer">
         select count(*) from yd_sold_note.yd_receipts_yd_user where job_num = #{jobNum}
     </select>
 
@@ -87,4 +89,9 @@
       </set>
       where id = #{user.id}
     </update>
+
+    <!-- List<User> allUser();   -->
+    <select id="allUser" resultType="user">
+        select * from yd_sold_note.yd_receipts_yd_user
+    </select>
 </mapper>

@@ -8,7 +8,10 @@ import com.ydxsj.ydsoldnote.mapper.DataManagementMapper;
 import com.ydxsj.ydsoldnote.mapper.UserMapper;
 import com.ydxsj.ydsoldnote.mapper.UserTokenMapper;
 import com.ydxsj.ydsoldnote.service.DataManagementService;
+import com.ydxsj.ydsoldnote.service.UserService;
 import com.ydxsj.ydsoldnote.service.UserUtil;
+import com.ydxsj.ydsoldnote.util.JedisUtil.CityJedisUtil;
+import com.ydxsj.ydsoldnote.util.JedisUtil.UserJedisUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,6 +33,8 @@ public class DataManagementServiceImpl implements DataManagementService {
     private CityMapper cityMapper;
     @Autowired
     private UserUtil userUtil;
+    @Autowired
+    private UserService userService;
 
     private final static String PLATFORM_ABBREVIATION = "PT";
     private final static String YOUDAO_ABBREVIATION = "YD";
@@ -77,17 +82,22 @@ public class DataManagementServiceImpl implements DataManagementService {
 
     @Override
     public List<Province> getProvinces(String token) {
+        Integer id = UserJedisUtil.getUserIdByToken(token);
+        User user = UserJedisUtil.getUserById(id);
+        Set<Integer> ids = userService.getProvincesByUser(user);
+        return CityJedisUtil.getProvinceByIds(ids);
         //获取用户信息
-        return userUtil.getProvincesByToken(token);
+//        return userUtil.getProvincesByToken(token);
     }
 
     @Override
     public List<City> getCitysByProvinces(List<Province> provinces) {
-        List<String> provinceIds = new ArrayList<>();
-        for (Province province : provinces){
-            provinceIds.add(String.valueOf(province.getId()));
-        }
-        return cityMapper.getCitysByProvinceIds(provinceIds);
+//        List<String> provinceIds = new ArrayList<>();
+//        for (Province province : provinces){
+//            provinceIds.add(String.valueOf(province.getId()));
+//        }
+//        return cityMapper.getCitysByProvinceIds(provinceIds);
+        return CityJedisUtil.getCitiesByProvinces(provinces);
     }
 
     @Override

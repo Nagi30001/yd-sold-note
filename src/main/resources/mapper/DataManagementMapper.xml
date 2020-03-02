@@ -264,4 +264,58 @@
     <update id="updateIccid" useGeneratedKeys="true">
         update yd_sold_note.yd_receipts_iccid set status = #{i.status} where iccid = #{i.iccid}
     </update>
+
+    <!--  Integer getEquipmentMsgByMsg(@Param("equipmentBrand") String equipmentBrand,@Param("equipmentTypeNum") String equipmentTypeNum,@Param("size") String size);  -->
+    <select id="getEquipmentMsgByMsg" resultType="java.lang.Integer">
+        select id from yd_receipts_equipment_msg where  equipment_brand = #{equipmentBrand} and equipment_type_num = #{equipmentTypeNum} and size = #{size}
+    </select>
+    <!--  SellType getSellTypeByName(@Param("sellTypeName") String sellTypeName);  -->
+    <select id="getSellTypeByName" resultType="sellType">
+        select * from yd_receipts_sell_type where sell_type = #{sellTypeName}
+    </select>
+
+    <!--Addition getAdditionsByName(@Param("str") String str);    -->
+    <select id="getAdditionsByName" resultType="addition">
+        select * from yd_receipts_addition where addition_name = #{str}
+    </select>
+
+    <!-- List<Channel> getChannel();   -->
+    <select id="getChannel" resultType="channel">
+        select *  from yd_receipts_channel
+    </select>
+
+    <!-- List<InventoryMsg> getInventoryMsg();   -->
+    <select id="getInventoryMsg" resultType="inventoryMsg">
+        select * from yd_receipts_equipment_inventory
+    </select>
+
+    <!--    List<PurchaseMsg> getPurchaseMsg();-->
+    <select id="getPurchaseMsg" resultType="purchaseMsg">
+        select * from yd_receipts_equipment_purchase_msg
+    </select>
+
+    <!-- List<ScrapMsg> getScrapMsg();   -->
+    <select id="getScrapMsg" resultType="scrapMsg">
+        select * from yd_receipts_equipment_scrap_msg
+    </select>
+
+    <!--  List<ChangeMsg> getChangeMsg();  -->
+    <select id="getChangeMsg" resultType="changeMsg">
+        select * from yd_receipts_equipment_change_msg
+    </select>
+
+    <!-- List<MaintainMsg> getMaintainMsg();   -->
+    <select id="getMaintainMsg" resultType="maintainMsg">
+        select * from yd_receipts_equipment_maintain_msg
+    </select>
+
+    <!-- List<TransferMsg> getTransferMsg();   -->
+    <select id="getTransferMsg" resultType="transferMsg">
+        select * from yd_receipts_equipment_transfer_msg
+    </select>
+
+    <!--  List<CarType> getAllCarType();  -->
+    <select id="getAllCarType" resultType="carType">
+        select * from yd_receipts_car_type
+    </select>
 </mapper>

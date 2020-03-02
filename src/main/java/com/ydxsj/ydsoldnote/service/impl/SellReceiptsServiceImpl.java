@@ -4,7 +4,6 @@ import com.ydxsj.ydsoldnote.bean.CarReceipts;
 import com.ydxsj.ydsoldnote.bean.GatheringMsg;
 import com.ydxsj.ydsoldnote.bean.ImageUrl;
 import com.ydxsj.ydsoldnote.bean.QueryCRMsg;
-import com.ydxsj.ydsoldnote.bean.data.Addition;
 import com.ydxsj.ydsoldnote.bean.data.Iccid;
 import com.ydxsj.ydsoldnote.bean.data.SellType;
 import com.ydxsj.ydsoldnote.bean.data.TimeMsg;
@@ -58,6 +57,7 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
         System.err.println("provincesId:" + provincesId.toString());
         //使用省份获取省份名称
         List<String> provinces = cityMapper.getProvinceById(provincesId);
+        // 获取
         System.err.println("provinces:" + provinces.toString());
         // 使用省份名称获取对应的单据信息（时间倒序）
         List<CarReceipts> carReceiptss = sellReceiptsMapper.getCarReceiptsByProvince(provinces,Integer.valueOf(page),Integer.valueOf(count));
@@ -367,6 +367,9 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
         String startingDate = String.valueOf(map.get("startingDate"));
         String endDate = String.valueOf(map.get("endDay"));
         String status = String.valueOf(map.get("status"));
+        String page = String.valueOf(map.get("page"));
+        String count = String.valueOf(map.get("count"));
+
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         // 查询时间类型
         String checkTimeType = String.valueOf(map.get("checkTimeType"));
@@ -410,6 +413,9 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
         queryCRMsg.setStartingDate(startingDate);
         queryCRMsg.setEndDate(endDate);
         queryCRMsg.setSellName(sellName);
+        queryCRMsg.setPage(Integer.valueOf(page));
+        queryCRMsg.setCount(Integer.valueOf(count));
+
         if (!StringUtils.isEmpty(sellType)){
             queryCRMsg.setSellType(sellType);
         }

@@ -6,7 +6,6 @@ import com.ydxsj.ydsoldnote.bean.data.City;
 import com.ydxsj.ydsoldnote.bean.data.Province;
 import com.ydxsj.ydsoldnote.bean.role.Role;
 import com.ydxsj.ydsoldnote.bean.user.User;
-import com.ydxsj.ydsoldnote.bean.user.UserToken;
 import com.ydxsj.ydsoldnote.service.DataManagementService;
 import com.ydxsj.ydsoldnote.service.UserService;
 import org.apache.commons.lang3.StringUtils;
@@ -27,38 +26,37 @@ public class UserController {
     private DataManagementService dataManagementService;
 
     /**
-     * 登陆
+     * 用户登陆
      * @return
      */
     @RequestMapping("/user/login")
     public JSONObject login(@RequestBody Map map) {
-        String username = (String) map.get("username");
+        String jobNum = (String) map.get("username");
         String password = (String) map.get("password");
-        System.err.println("用户名："+username+"------密码："+password);
         JSONObject json = new JSONObject();
-
-
-        // 用户信息
-//        ManagerInfo managerInfo = managerService.getManagerInfo(username);
-        User user = userService.getUserByJobName(username);
-        // 账号不存在、密码错误
-        if (user == null || !user.getJobPassword().equals(password)) {
+        try {
+            User user = userService.getUserByJobNum(jobNum);
+            // 账号不存在、密码错误
+            if (user == null || !user.getJobPassword().equals(password)) {
+                json.put("code", 20001);
+                json.put("message", "账号或密码不正确");
+                return json;
+            }
+            if (user.getStatus() != 1){
+                json.put("code", 20001);
+                json.put("message", "账号已被禁用,请联系管理员");
+                return json;
+            }
+            String token  = userService.saveToken(user.getId());
+            json.put("token", token);
+            json.put("message", "登陆成功");
+            json.put("code", 20000);
+            return json;
+        } catch (RuntimeException e){
             json.put("code", 20001);
-            json.put("message", "账号或密码不正确");
+            json.put("message", e.getMessage());
             return json;
         }
-        if (user.getStatus() != 1){
-            json.put("code", 20001);
-            json.put("message", "账号已被禁用,请联系管理员");
-            return json;
-        }
-
-        UserToken userToken = userService.saveToken(user.getId());
-        json.put("token", userToken.getToken());
-        json.put("message", "登陆成功");
-        json.put("code", 20000);
-
-        return json;
     }
 
     /**
@@ -69,19 +67,25 @@ public class UserController {
     @RequestMapping("/user/info")
     public JSONObject info(String token){
         JSONObject json = new JSONObject();
-        System.err.println("获取权限："+token);
-        if (token != null && token != ""){
-            List<String> roles = userService.getUserInfoByToken(token);
-            User user = userService.getUserByToken(token);
-            json.put("user",user);
-            json.put("code",20000);
-            json.put("roles",roles);
-            return json;
-        } else {
+        try {
+            if (StringUtils.isEmpty(token)){
+                List<String> roles = userService.getUserInfoByToken(token);
+                User user = userService.getUserByToken(token);
+                json.put("user",user);
+                json.put("code",20000);
+                json.put("roles",roles);
+                return json;
+            } else {
+                json.put("code",20001);
+                json.put("message","权限错误");
+                return json;
+            }
+        } catch (RuntimeException e){
             json.put("code",20001);
-            json.put("message","权限错误");
+            json.put("message",e.getMessage());
             return json;
         }
+
     }
 
     /**
@@ -138,38 +142,45 @@ public class UserController {
     @RequestMapping("/user/getUsers")
     public JSONObject getUsers(String token){
         JSONObject jsonObject  =  new JSONObject();
-        if (StringUtils.isEmpty(token)){
-            jsonObject.put("code",20001);
-            jsonObject.put("message","登陆失效，请重新登陆");
-            return jsonObject;
-        }
-        // 用户信息
-        User user = userService.getUserByToken(token);
-        if (user == null ){
-            jsonObject.put("code",20001);
-            jsonObject.put("message","登陆失效，请重新登陆");
-            return jsonObject;
-        }
-        // 获取yd用户
-        List<User> ydUsers = userService.getUsersByType(token,"yd");
-        // 获取平台用户
-        List<User> ptUsers = userService.getUsersByType(token,"pt");
-        // 获取用户省份信息
-        List<Province> provinces = dataManagementService.getProvinces(token);
-        // 获取用户城市信息
-        List<City> cities = dataManagementService.getCitysByProvinces(provinces);
-        // 权限信息
-        List<Role> roles = userService.getRolesBy(user);
+        try {
+            if (StringUtils.isEmpty(token)){
+                jsonObject.put("code",20001);
+                jsonObject.put("message","登陆失效，请重新登陆");
+                return jsonObject;
+            }
+            // 用户信息
+            User user = userService.getUserByToken(token);
+            if (user == null ){
+                jsonObject.put("code",20001);
+                jsonObject.put("message","登陆失效，请重新登陆");
+                return jsonObject;
+            }
+            // 获取yd用户
+            List<User> ydUsers = userService.getUsersByType(token,"yd");
+            // 获取平台用户
+            List<User> ptUsers = userService.getUsersByType(token,"pt");
+            // 获取用户省份信息--------------------
+            List<Province> provinces = dataManagementService.getProvinces(token);
+            // 获取用户城市信息
+            List<City> cities = dataManagementService.getCitysByProvinces(provinces);
+            // 权限信息
+            List<Role> roles = userService.getRolesBy(user);
 
-        jsonObject.put("roles",roles);
-        jsonObject.put("user",user);
-        jsonObject.put("ydUsers",ydUsers);
-        jsonObject.put("ptUsers",ptUsers);
-        jsonObject.put("provinces",provinces);
-        jsonObject.put("cities",cities);
-        jsonObject.put("code",20000);
-        jsonObject.put("message","获取成功用户信息");
-        return jsonObject;
+            jsonObject.put("roles",roles);
+            jsonObject.put("user",user);
+            jsonObject.put("ydUsers",ydUsers);
+            jsonObject.put("ptUsers",ptUsers);
+            jsonObject.put("provinces",provinces);
+            jsonObject.put("cities",cities);
+            jsonObject.put("code",20000);
+            jsonObject.put("message","获取成功用户信息");
+            return jsonObject;
+        } catch (RuntimeException e){
+            jsonObject.put("code",20001);
+            jsonObject.put("message",e.getMessage());
+            return jsonObject;
+        }
+
     }
 
 
@@ -181,7 +192,6 @@ public class UserController {
     @RequestMapping("/user/addUser")
     public JSONObject addUser(@RequestBody Map map){
         JSONObject jsonObject = new JSONObject();
-        System.err.println(map);
         String token = (String) map.get("token");
         Map userMap = (Map) map.get("data");
         User user = userService.addUser(token,userMap);
@@ -204,7 +214,6 @@ public class UserController {
      */
     @RequestMapping("/user/checkJobNum")
     public JSONObject checkJobNum(String value){
-        System.err.println(value);
         JSONObject jsonObject = new JSONObject();
         if (StringUtils.isEmpty(value)){
             jsonObject.put("code",2000);
