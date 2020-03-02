@@ -4,14 +4,11 @@ import com.alibaba.fastjson.JSON;
 import com.ydxsj.ydsoldnote.bean.data.*;
 import com.ydxsj.ydsoldnote.bean.data.equipment.*;
 import com.ydxsj.ydsoldnote.bean.user.User;
-import com.ydxsj.ydsoldnote.config.redis.JedisPoolUtil;
 import com.ydxsj.ydsoldnote.mapper.DataManagementMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import redis.clients.jedis.Jedis;
-import sun.applet.Main;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
@@ -28,6 +25,7 @@ public class DMJedisUtil {
     private static final String DATA_CHANNEL_STATUS_ACTIVE = "DATA_CHANNEL_STATUS_ACTIVE";
     private static final String DATA_CHANNEL_STATUS_INACTIVE = "DATA_CHANNEL_STATUS_INACTIVE";
     private static final String DATA_CAR_TYPE_ID = "DATA_CAR_TYPE_ID:";
+    private static final String DATA_CAR_TYPE = "DATA_CAR_TYPE";
     private static final String DATA_CAR_BRAND = "DATA_CAR_BRAND";
     private static final String DATA_CAR_SUB_BRAND = "DATA_CAR_SUB_BRAND:";
     private static final String DATA_SELL_TYPE_ID = "DATA_SELL_TYPE_ID:";
@@ -57,8 +55,6 @@ public class DMJedisUtil {
     private DataManagementMapper dataManagementMapper;
 
 
-
-
     @PostConstruct
     public void init() {
         dmJedisUtil = this;
@@ -77,10 +73,7 @@ public class DMJedisUtil {
             initializationChannel(channelList);
             // 车型信息初始化
             List<CarType> carTypes = dmJedisUtil.dataManagementMapper.getAllCarType();
-            for (CarType carType : carTypes) {
-                // 车型信息-id - 车型信息
-                jedis.set(DATA_CAR_TYPE_ID + carType.getId(), JSON.toJSONString(carType));
-            }
+            initializationCarType(carTypes);
             // 车辆品牌信息初始化
             List<CarType> carTypess = dmJedisUtil.dataManagementMapper.getCarType();
             initializationCarBrandAndCarSubBrand(carTypess);
@@ -90,33 +83,18 @@ public class DMJedisUtil {
             // 附加业务类型信息初始化
             List<Addition> additions = dmJedisUtil.dataManagementMapper.getAdditions();
             initializationAddition(additions);
-            for (SellType sellType : sellTypes) {
-                // 销售类型-id - 销售类型信息
-                jedis.set(DATA_SELL_TYPE_ID + sellType.getId(), JSON.toJSONString(sellType));
-            }
             // 设备型号信息初始化
             List<EquipmentMsg> equipmentMsgs = dmJedisUtil.dataManagementMapper.getEquipmentMsg();
             initializationEquipmentMsg(equipmentMsgs);
             // 设备库存初始化
             List<InventoryMsg> inventoryMsgs = dmJedisUtil.dataManagementMapper.getInventoryMsg();
             initializationInventoryMsg(inventoryMsgs);
-
+            // 采购信息初始化
             List<PurchaseMsg> purchaseMsgs = dmJedisUtil.dataManagementMapper.getPurchaseMsg();
-            for (PurchaseMsg purchaseMsg : purchaseMsgs) {
-                // 采购记录-id - 采购信息
-                jedis.set(DATA_PURCHASE_MSG_ID + purchaseMsg.getId(), JSON.toJSONString(purchaseMsg));
-                // 采购记录-采购人id - id
-                jedis.sadd(DATA_PURCHASE_USER_ID + purchaseMsg.getPurchaseUserId(), purchaseMsg.getId() + "");
-                // 采购记录-收货人id - id
-                jedis.sadd(DATA_PURCHASE_CONSIGNEE_ID + purchaseMsg.getConsigneeUserId(), purchaseMsg.getId() + "");
-            }
+            initializationPurchaseMsg(purchaseMsgs);
+            // 报废信息初始化
             List<ScrapMsg> scrapMsgs = dmJedisUtil.dataManagementMapper.getScrapMsg();
-            for (ScrapMsg scrapMsg : scrapMsgs) {
-                // 报废记录-id - 报废信息
-                jedis.set(DATA_SCRAP_MSG_ID + scrapMsg.getId(), JSON.toJSONString(scrapMsg));
-                // 报废记录-报废人id - id
-                jedis.sadd(DATA_SCRAP_USER_ID + scrapMsg.getRequestUserId(), scrapMsg.getId() + "");
-            }
+            initializationScrapMsg(scrapMsgs);
             // 更换记录初始化
             List<ChangeMsg> changeMsgs = dmJedisUtil.dataManagementMapper.getChangeMsg();
             initializationChangeMsg(changeMsgs);
@@ -242,37 +220,53 @@ public class DMJedisUtil {
         }
     }
 
-    public static void initializationEquipmentMsg(List<EquipmentMsg> equipmentMsgs){
-        for (EquipmentMsg equipmentMsg : equipmentMsgs){
+    public static void initializationEquipmentMsg(List<EquipmentMsg> equipmentMsgs) {
+        for (EquipmentMsg equipmentMsg : equipmentMsgs) {
             addEquipmentMsg(equipmentMsg);
         }
     }
 
-    public static void initializationInventoryMsg(List<InventoryMsg> inventoryMsgs){
-        for (InventoryMsg inventoryMsg : inventoryMsgs){
+    public static void initializationInventoryMsg(List<InventoryMsg> inventoryMsgs) {
+        for (InventoryMsg inventoryMsg : inventoryMsgs) {
             addInventoryMsg(inventoryMsg);
         }
     }
 
-    public static void initializationTransferMsg(List<TransferMsg> transferMsgs){
-        for (TransferMsg transferMsg : transferMsgs){
+    public static void initializationTransferMsg(List<TransferMsg> transferMsgs) {
+        for (TransferMsg transferMsg : transferMsgs) {
             addTransferMsg(transferMsg);
         }
     }
 
-    public static void initializationChangeMsg(List<ChangeMsg> changeMsgs){
-        for (ChangeMsg changeMsg : changeMsgs){
+    public static void initializationChangeMsg(List<ChangeMsg> changeMsgs) {
+        for (ChangeMsg changeMsg : changeMsgs) {
             addChannelMsg(changeMsg);
         }
     }
 
-    public static void initializationMaintainMsg(List<MaintainMsg> maintainMsgs){
-        for (MaintainMsg maintainMsg : maintainMsgs){
+    public static void initializationMaintainMsg(List<MaintainMsg> maintainMsgs) {
+        for (MaintainMsg maintainMsg : maintainMsgs) {
             addMaintainMgs(maintainMsg);
         }
     }
 
+    public static void initializationPurchaseMsg(List<PurchaseMsg> purchaseMsgs) {
+        for (PurchaseMsg purchaseMsg : purchaseMsgs) {
+            addPurchaseMsg(purchaseMsg);
+        }
+    }
 
+    public static void initializationScrapMsg(List<ScrapMsg> scrapMsgs) {
+        for (ScrapMsg scrapMsg : scrapMsgs) {
+            addScrapMsg(scrapMsg);
+        }
+    }
+
+    public static void initializationCarType(List<CarType> carTypes) {
+        for (CarType carType : carTypes) {
+            addCarType(carType);
+        }
+    }
 
 
     /**
@@ -547,17 +541,18 @@ public class DMJedisUtil {
 
     /**
      * 获取全部设备信息
+     *
      * @return
      */
-    public static List<EquipmentMsg> getAllEquipmentMsg(){
+    public static List<EquipmentMsg> getAllEquipmentMsg() {
         Jedis jedis = null;
         try {
             jedis = JedisUtil.jedisPoolUtil.borrowJedis();
             jedis.select(4);
             Set<String> smembers = jedis.smembers(DATA_EQUIPMENT_MSG);
             List<EquipmentMsg> equipmentMsg = new ArrayList<>();
-            for (String s : smembers){
-                equipmentMsg.add(JSON.parseObject(jedis.get(DATA_EQUIPMENT_MSG_ID+s),EquipmentMsg.class));
+            for (String s : smembers) {
+                equipmentMsg.add(JSON.parseObject(jedis.get(DATA_EQUIPMENT_MSG_ID + s), EquipmentMsg.class));
             }
             return equipmentMsg;
         } catch (Exception e) {
@@ -567,15 +562,15 @@ public class DMJedisUtil {
         }
     }
 
-    public static List<InventoryMsg> getInventoryMsgByTPId(Integer id){
+    public static List<InventoryMsg> getInventoryMsgByTPId(Integer id) {
         Jedis jedis = null;
         try {
             jedis = JedisUtil.jedisPoolUtil.borrowJedis();
             jedis.select(4);
             Set<String> smembers = jedis.smembers(DATA_INVENTORY_TP_ID + id);
             List<InventoryMsg> inventoryMsgs = new ArrayList<>();
-            for(String s : smembers ){
-                inventoryMsgs.add(JSON.parseObject(jedis.get(DATA_INVENTORY_ID),InventoryMsg.class));
+            for (String s : smembers) {
+                inventoryMsgs.add(JSON.parseObject(jedis.get(DATA_INVENTORY_ID), InventoryMsg.class));
             }
             return inventoryMsgs;
         } catch (Exception e) {
@@ -584,15 +579,16 @@ public class DMJedisUtil {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
         }
     }
+
     public static List<InventoryMsg> getInventoryMsgByTPIds(List<User> userList) {
         List<InventoryMsg> inventoryMsgs = new ArrayList<>();
-        for (User user : userList){
-            inventoryMsgs = (List<InventoryMsg>) CollectionUtils.union(inventoryMsgs,getInventoryMsgByTPId(user.getId()));
+        for (User user : userList) {
+            inventoryMsgs = (List<InventoryMsg>) CollectionUtils.union(inventoryMsgs, getInventoryMsgByTPId(user.getId()));
         }
         return inventoryMsgs;
     }
 
-    public static void addInventoryMsg(InventoryMsg inventoryMsg){
+    public static void addInventoryMsg(InventoryMsg inventoryMsg) {
         Jedis jedis = null;
         try {
             jedis = JedisUtil.jedisPoolUtil.borrowJedis();
@@ -608,12 +604,16 @@ public class DMJedisUtil {
         }
     }
 
+    public static void updateInventoryMsg(InventoryMsg inventoryMsg) {
+        addInventoryMsg(inventoryMsg);
+    }
+
     public static EquipmentMsg getEquipmentMsgById(Integer equipmentMsgId) {
         Jedis jedis = null;
         try {
             jedis = JedisUtil.jedisPoolUtil.borrowJedis();
             jedis.select(4);
-            return JSON.parseObject(jedis.get(DATA_EQUIPMENT_MSG_ID+equipmentMsgId),EquipmentMsg.class);
+            return JSON.parseObject(jedis.get(DATA_EQUIPMENT_MSG_ID + equipmentMsgId), EquipmentMsg.class);
         } catch (Exception e) {
             throw new RuntimeException("设备信息获取错误！");
         } finally {
@@ -628,8 +628,8 @@ public class DMJedisUtil {
             jedis.select(4);
             Set<String> sinter = jedis.sunion(DATA_EQUIPMENT_TRANSFER_REQUEST_USER_ID + user.getId(), DATA_EQUIPMENT_TRANSFER_CONSIGNEE_USER_ID + user.getId());
             List<TransferMsg> transferMsgs = new ArrayList<>();
-            for (String str : sinter){
-                transferMsgs.add(JSON.parseObject(jedis.get(DATA_EQUIPMENT_TRANSFER_MSG_ID+str), TransferMsg.class));
+            for (String str : sinter) {
+                transferMsgs.add(JSON.parseObject(jedis.get(DATA_EQUIPMENT_TRANSFER_MSG_ID + str), TransferMsg.class));
             }
             return transferMsgs;
         } catch (Exception e) {
@@ -659,26 +659,26 @@ public class DMJedisUtil {
 
     public static List<TransferMsg> getTransferMsgByUsers(List<User> userList) {
         List<TransferMsg> transferMsgs = new ArrayList<>();
-        for (User user : userList){
-            transferMsgs = (List<TransferMsg>) CollectionUtils.union(transferMsgs,getPTAndTransferMsg(user));
+        for (User user : userList) {
+            transferMsgs = (List<TransferMsg>) CollectionUtils.union(transferMsgs, getPTAndTransferMsg(user));
         }
         return transferMsgs;
     }
 
-    public static List<ChangeMsg> getChannelMsgByUser(User user,boolean type) {
+    public static List<ChangeMsg> getChannelMsgByUser(User user, boolean type) {
         Jedis jedis = null;
         try {
             jedis = JedisUtil.jedisPoolUtil.borrowJedis();
             jedis.select(4);
             Set<String> smembers;
-            if (type){
+            if (type) {
                 smembers = jedis.smembers(DATA_EQUIPMENT_CHANGE_USER_ID + user.getId());
             } else {
                 smembers = jedis.smembers(DATA_EQUIPMENT_CHANGE_CHECK_USER_ID + user.getId());
             }
             List<ChangeMsg> changeMsgs = new ArrayList<>();
-            for (String s : smembers){
-                changeMsgs.add(JSON.parseObject(jedis.get(DATA_EQUIPMENT_CHANGE_MSG_ID+s),ChangeMsg.class));
+            for (String s : smembers) {
+                changeMsgs.add(JSON.parseObject(jedis.get(DATA_EQUIPMENT_CHANGE_MSG_ID + s), ChangeMsg.class));
             }
             return changeMsgs;
         } catch (Exception e) {
@@ -698,7 +698,7 @@ public class DMJedisUtil {
             // 更换记录-更换人id - id
             jedis.sadd(DATA_EQUIPMENT_CHANGE_USER_ID + changeMsg.getThirdPartyTerraceId(), changeMsg.getId() + "");
             // 更换记录-确认人id - id
-            jedis.sadd(DATA_EQUIPMENT_CHANGE_CHECK_USER_ID+changeMsg.getCheckUserId(),changeMsg.getId()+"");
+            jedis.sadd(DATA_EQUIPMENT_CHANGE_CHECK_USER_ID + changeMsg.getCheckUserId(), changeMsg.getId() + "");
         } catch (Exception e) {
             throw new RuntimeException("设备信息获取错误！");
         } finally {
@@ -708,13 +708,13 @@ public class DMJedisUtil {
 
     public static List<ChangeMsg> getChannelMsgByUsers(List<User> userList) {
         List<ChangeMsg> changeMsgs = new ArrayList<>();
-        for (User user : userList){
-            changeMsgs = (List<ChangeMsg>) CollectionUtils.union(changeMsgs,getChannelMsgByUser(user,false));
+        for (User user : userList) {
+            changeMsgs = (List<ChangeMsg>) CollectionUtils.union(changeMsgs, getChannelMsgByUser(user, false));
         }
         return changeMsgs;
     }
 
-    public static void addMaintainMgs(MaintainMsg maintainMsg){
+    public static void addMaintainMgs(MaintainMsg maintainMsg) {
         Jedis jedis = null;
         try {
             jedis = JedisUtil.jedisPoolUtil.borrowJedis();
@@ -732,15 +732,15 @@ public class DMJedisUtil {
         }
     }
 
-    public static List<MaintainMsg> getMaintainMgsByUser(User user){
+    public static List<MaintainMsg> getMaintainMgsByUser(User user) {
         Jedis jedis = null;
         try {
             jedis = JedisUtil.jedisPoolUtil.borrowJedis();
             jedis.select(4);
             Set<String> sunion = jedis.sunion(DATA_EQUIPMENT_MAINTAIN_USER_ID + user.getId(), DATA_EQUIPMENT_MAINTAIN_CONSIGNEE_USER_ID + user.getId());
             List<MaintainMsg> maintainMsg = new ArrayList<>();
-            for (String s : sunion){
-                maintainMsg.add(JSON.parseObject(jedis.get(DATA_EQUIPMENT_MAINTAIN_MSG_ID+s),MaintainMsg.class));
+            for (String s : sunion) {
+                maintainMsg.add(JSON.parseObject(jedis.get(DATA_EQUIPMENT_MAINTAIN_MSG_ID + s), MaintainMsg.class));
             }
             return maintainMsg;
         } catch (Exception e) {
@@ -752,9 +752,150 @@ public class DMJedisUtil {
 
     public static List<MaintainMsg> getMaintainMgsByUsers(List<User> userList) {
         List<MaintainMsg> maintainMsgs = new ArrayList<>();
-        for (User user : userList){
-            maintainMsgs = (List<MaintainMsg>) CollectionUtils.union(maintainMsgs,getMaintainMgsByUser(user));
+        for (User user : userList) {
+            maintainMsgs = (List<MaintainMsg>) CollectionUtils.union(maintainMsgs, getMaintainMgsByUser(user));
         }
         return maintainMsgs;
+    }
+
+    /**
+     * 添加采购信息
+     *
+     * @param purchaseMsg
+     */
+    public static void addPurchaseMsg(PurchaseMsg purchaseMsg) {
+        Jedis jedis = null;
+        try {
+            jedis = JedisUtil.jedisPoolUtil.borrowJedis();
+            jedis.select(4);
+            // 采购记录-id - 采购信息
+            jedis.set(DATA_PURCHASE_MSG_ID + purchaseMsg.getId(), JSON.toJSONString(purchaseMsg));
+            // 采购记录-采购人id - id
+            jedis.sadd(DATA_PURCHASE_USER_ID + purchaseMsg.getPurchaseUserId(), purchaseMsg.getId() + "");
+            // 采购记录-收货人id - id
+            jedis.sadd(DATA_PURCHASE_CONSIGNEE_ID + purchaseMsg.getConsigneeUserId(), purchaseMsg.getId() + "");
+        } catch (Exception e) {
+            throw new RuntimeException("设备信息获取错误！");
+        } finally {
+            JedisUtil.jedisPoolUtil.returnJedis(jedis);
+        }
+    }
+
+    public static List<PurchaseMsg> getPurchaseMsgByUser(User user) {
+        Jedis jedis = null;
+        try {
+            jedis = JedisUtil.jedisPoolUtil.borrowJedis();
+            jedis.select(4);
+            Set<String> sunion = jedis.sunion(DATA_PURCHASE_USER_ID + user.getId(), DATA_PURCHASE_CONSIGNEE_ID + user.getId());
+            List<PurchaseMsg> purchaseMsg = new ArrayList<>();
+            for (String s : sunion) {
+                purchaseMsg.add(getPurchaseMsgById(s));
+            }
+            return purchaseMsg;
+        } catch (Exception e) {
+            throw new RuntimeException("设备信息获取错误！");
+        } finally {
+            JedisUtil.jedisPoolUtil.returnJedis(jedis);
+        }
+    }
+
+    public static PurchaseMsg getPurchaseMsgById(String purchaseMsgId) {
+        Jedis jedis = null;
+        try {
+            jedis = JedisUtil.jedisPoolUtil.borrowJedis();
+            jedis.select(4);
+            return JSON.parseObject(jedis.get(DATA_PURCHASE_MSG_ID + purchaseMsgId), PurchaseMsg.class);
+        } catch (Exception e) {
+            throw new RuntimeException("设备信息获取错误！");
+        } finally {
+            JedisUtil.jedisPoolUtil.returnJedis(jedis);
+        }
+    }
+
+    public static List<PurchaseMsg> getPurchaseMsgByUsers(List<User> users) {
+        List<PurchaseMsg> purchaseMsgs = new ArrayList<>();
+        for (User user : users) {
+            purchaseMsgs = (List<PurchaseMsg>) CollectionUtils.union(purchaseMsgs, getPurchaseMsgByUser(user));
+        }
+        return purchaseMsgs;
+    }
+
+    public static void updatePurchaseMsg(PurchaseMsg purchaseMsg1) {
+        addPurchaseMsg(purchaseMsg1);
+    }
+
+    public static void addScrapMsg(ScrapMsg scrapMsg) {
+        Jedis jedis = null;
+        try {
+            jedis = JedisUtil.jedisPoolUtil.borrowJedis();
+            jedis.select(4);
+            // 报废记录-id - 报废信息
+            jedis.set(DATA_SCRAP_MSG_ID + scrapMsg.getId(), JSON.toJSONString(scrapMsg));
+            // 报废记录-报废人id - id
+            jedis.sadd(DATA_SCRAP_USER_ID + scrapMsg.getRequestUserId(), scrapMsg.getId() + "");
+        } catch (Exception e) {
+            throw new RuntimeException("设备信息获取错误！");
+        } finally {
+            JedisUtil.jedisPoolUtil.returnJedis(jedis);
+        }
+    }
+
+    public static List<ScrapMsg> getScrapMsgByUser(User user) {
+        Jedis jedis = null;
+        try {
+            jedis = JedisUtil.jedisPoolUtil.borrowJedis();
+            jedis.select(4);
+            Set<String> smembers = jedis.smembers(DATA_SCRAP_USER_ID + user.getId());
+            List<ScrapMsg> scrapMsg = new ArrayList<>();
+            for (String s : smembers) {
+                scrapMsg.add(JSON.parseObject(jedis.get(DATA_SCRAP_MSG_ID + s), ScrapMsg.class));
+            }
+            return scrapMsg;
+        } catch (Exception e) {
+            throw new RuntimeException("设备信息获取错误！");
+        } finally {
+            JedisUtil.jedisPoolUtil.returnJedis(jedis);
+        }
+    }
+
+    public static List<ScrapMsg> getScrapMsgByUsers(List<User> users) {
+        List<ScrapMsg> scrapMsgs = new ArrayList<>();
+        for (User user : users) {
+            scrapMsgs = (List<ScrapMsg>) CollectionUtils.union(scrapMsgs, getPurchaseMsgByUser(user));
+        }
+        return scrapMsgs;
+    }
+
+    public static void addCarType(CarType carType) {
+        Jedis jedis = null;
+        try {
+            jedis = JedisUtil.jedisPoolUtil.borrowJedis();
+            jedis.select(4);
+            // 车型信息-id - 车型信息
+            jedis.set(DATA_CAR_TYPE_ID + carType.getId(), JSON.toJSONString(carType));
+            jedis.sadd(DATA_CAR_TYPE, carType.getId() + "");
+        } catch (Exception e) {
+            throw new RuntimeException("设备信息获取错误！");
+        } finally {
+            JedisUtil.jedisPoolUtil.returnJedis(jedis);
+        }
+    }
+
+    public static List<CarType> getAllCarType() {
+        Jedis jedis = null;
+        try {
+            jedis = JedisUtil.jedisPoolUtil.borrowJedis();
+            jedis.select(4);
+            Set<String> smembers = jedis.smembers(DATA_CAR_TYPE);
+            List<CarType> carTypes = new ArrayList<>();
+            for (String str : smembers) {
+                carTypes.add(JSON.parseObject(jedis.get(DATA_CAR_TYPE_ID + str), CarType.class));
+            }
+            return carTypes;
+        } catch (Exception e) {
+            throw new RuntimeException("设备信息获取错误！");
+        } finally {
+            JedisUtil.jedisPoolUtil.returnJedis(jedis);
+        }
     }
 }

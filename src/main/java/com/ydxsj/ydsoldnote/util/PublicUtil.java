@@ -5,8 +5,8 @@ import java.util.Date;
 
 public class PublicUtil {
 
-    public static SimpleDateFormat SDF_YYYY_DD_MM = new SimpleDateFormat("YYYY-dd-MM");
-    public static SimpleDateFormat SDF_YYYY_DD_MM_HH_MM_SS = new SimpleDateFormat("YYYY-dd-MM HH:mm:ss");
+    public static SimpleDateFormat SDF_YYYY_DD_MM = new SimpleDateFormat("yyyy-MM-dd");
+    public static SimpleDateFormat SDF_YYYY_DD_MM_HH_MM_SS = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
 
     public static String timestampToString(String timestamp,SimpleDateFormat sdf){

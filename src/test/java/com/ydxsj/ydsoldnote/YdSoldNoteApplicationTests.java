@@ -6,7 +6,6 @@ import com.ydxsj.ydsoldnote.mapper.UserMapper;
 import com.ydxsj.ydsoldnote.mapper.UserTokenMapper;
 import com.ydxsj.ydsoldnote.service.UserService;
 import com.ydxsj.ydsoldnote.util.JedisUtil.JedisUtil;
-import com.ydxsj.ydsoldnote.util.JedisUtil.UserJedisUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +29,17 @@ public class YdSoldNoteApplicationTests {
     private UserService userService;
     @Test
     public void contextLoads() {
+        Jedis jedis = null;
+        try {
+            jedis = JedisUtil.jedisPoolUtil.borrowJedis();
+            jedis.select(8);
+            jedis.set("qweewq","ewewewew");
+        } catch (Exception e){
+
+        } finally {
+            JedisUtil.jedisPoolUtil.returnJedis(jedis);
+        }
+
 
     }
 
