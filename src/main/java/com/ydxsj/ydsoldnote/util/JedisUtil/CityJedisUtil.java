@@ -21,7 +21,7 @@ public class CityJedisUtil {
 
     private static final String PROVINCE = "PROVINCE";
     private static final String CITY = "CITY:";
-    private static JedisPoolUtil jedisPoolUtil = new JedisPoolUtil("49.234.210.89", 6379, "rk123321");
+    private static JedisPoolUtil jedisPoolUtil = new JedisPoolUtil();
     private static Jedis jedis = jedisPoolUtil.borrowJedis();
     private static CityJedisUtil cityJedisUtil;
 
