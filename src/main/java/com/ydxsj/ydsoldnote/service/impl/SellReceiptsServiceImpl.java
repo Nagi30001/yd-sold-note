@@ -4,14 +4,15 @@ import com.ydxsj.ydsoldnote.bean.CarReceipts;
 import com.ydxsj.ydsoldnote.bean.GatheringMsg;
 import com.ydxsj.ydsoldnote.bean.ImageUrl;
 import com.ydxsj.ydsoldnote.bean.QueryCRMsg;
-import com.ydxsj.ydsoldnote.bean.data.Iccid;
-import com.ydxsj.ydsoldnote.bean.data.SellType;
-import com.ydxsj.ydsoldnote.bean.data.TimeMsg;
+import com.ydxsj.ydsoldnote.bean.data.*;
 import com.ydxsj.ydsoldnote.bean.data.equipment.EquipmentMsg;
+import com.ydxsj.ydsoldnote.bean.data.equipment.InventoryMsg;
 import com.ydxsj.ydsoldnote.bean.user.User;
 import com.ydxsj.ydsoldnote.mapper.*;
 import com.ydxsj.ydsoldnote.service.SellReceiptsService;
 import com.ydxsj.ydsoldnote.service.UserUtil;
+import com.ydxsj.ydsoldnote.util.JedisUtil.*;
+import com.ydxsj.ydsoldnote.util.PublicUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.management.relation.RoleUnresolved;
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
@@ -49,48 +51,38 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
     private String uploadDir;
 
     @Override
-    public List<CarReceipts> getCarReceipts(User user,Map map) {
-        String page = String.valueOf(map.get("page"));
-        String count = String.valueOf(map.get("count"));
+    public List<CarReceipts> getCarReceipts(User user, Map map) throws RuntimeException {
+        Integer page = Integer.valueOf(String.valueOf(map.get("page")));
+        Integer count = Integer.valueOf(String.valueOf(map.get("count")));
         // 获取用户省份
-        List<String> provincesId = Arrays.asList((user.getBeProvince().split("-")));
-        System.err.println("provincesId:" + provincesId.toString());
-        //使用省份获取省份名称
-        List<String> provinces = cityMapper.getProvinceById(provincesId);
+        List<Province> provinces = CityJedisUtil.getBeProvincesByUser(user);
         // 获取
-        System.err.println("provinces:" + provinces.toString());
         // 使用省份名称获取对应的单据信息（时间倒序）
-        List<CarReceipts> carReceiptss = sellReceiptsMapper.getCarReceiptsByProvince(provinces,Integer.valueOf(page),Integer.valueOf(count));
-
+        // 本月与省份并集的数据
+        Set<String> sinter = SellReceiptsJedisUtil.getSellReceiptsByProvince(new Date(), provinces);
+        if (CollectionUtils.isEmpty(sinter)) {
+            // 没有数据
+            return new ArrayList<>();
+        }
+        List<CarReceipts> carReceiptsList = getCarReceiptsByPaging(page,count,sinter);
         // 补全信息
-        carReceiptss = getCarreceipts(carReceiptss);
-//        for (CarReceipts carReceipts : carReceiptss) {
-//            // 收款信息
-//            carReceipts.setGatheringMsg(sellReceiptsMapper.getGatheringMsgById(carReceipts.getGatheringMsgId()));
-//            // 状态模块
-//            carReceipts.setTimeMsgs(getTimeMsg(carReceipts));
-//            // 平台信息
-//            carReceipts.setTpUser(userMapper.selectUserById(carReceipts.getThirdPartyTerraceId()));
-//            // 创建人信息
-//            carReceipts.setUser(userMapper.selectUserById(carReceipts.getUserId()));
-//        }
-        return carReceiptss;
+        carReceiptsList = getCarreceipts(carReceiptsList);
+        return carReceiptsList;
     }
 
     @Override
-    public CarReceipts addSellReceipts(Map map) {
+    @Transactional
+    public CarReceipts addSellReceipts(Map map) throws RuntimeException {
         Map data = (Map) map.get("temp");
         String token = (String) map.get("token");
-        System.err.println(map);
         double money = 0.0;
         double cashPledge = 0.0;
 
         CarReceipts carReceipts = new CarReceipts();
         // 根据token获取用户信息
-        Integer userId = userTokenMapper.getUserIdByToken(token);
-        System.err.println("userId" + userId);
+        Integer userId = UserJedisUtil.getUserIdByToken(token);
         // 获取平台信息
-        User tpUser = userMapper.selectUserById((Integer) data.get("thirdParty"));
+        User tpUser = UserJedisUtil.getUserById((Integer) data.get("thirdParty"));
         // 添加单据信息
         carReceipts.setCreateTime(String.valueOf(System.currentTimeMillis()));
         carReceipts.setUserId(userId);
@@ -98,20 +90,30 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
         carReceipts.setProvince(city.get(0));
         carReceipts.setCity(city.get(1));
         carReceipts.setReceiptsStatus(1);
-        carReceipts.setClientName((String) data.get("clientName"));
+        carReceipts.setClientName((String.valueOf(data.get("clientName"))).trim());
         carReceipts.setClientPhone(data.get("clientPhone").toString());
         List<String> carBrand = (List<String>) data.get("carType");
         carReceipts.setCarBrand(carBrand.get(0) + "/" + carBrand.get(1));
         carReceipts.setClientCarNum((String) data.get("carNum"));
         carReceipts.setThirdPartyTerraceId((Integer) data.get("thirdParty"));
         carReceipts.setCount(1);
-        carReceipts.setPredictInstallTime(String.valueOf(new SimpleDateFormat("yyyy-MM-dd HH:mm").parse((String) data.get("installTime"), new ParsePosition(0)).getTime()));
+        carReceipts.setPredictInstallTime(PublicUtil.stringTotimestamp(String.valueOf(data.get("installTime")), PublicUtil.SDF_YYYY_MM_DD_HH_MM));
         // 查询销售类型
-        SellType sellType = dataManagementMapper.getSellTypeById((Integer) data.get("sellType"));
+        SellType sellType = DMJedisUtil.getSellTypeById(String.valueOf(data.get("sellType")));
+        List<Integer> additions = (List<Integer>) data.get("additionType");
         money += sellType.getMoney();
         cashPledge += sellType.getCashPledge();
-        List<String> additions = (List<String>) data.get("additionType");
-        String additionType = StringUtils.join(additions,"-");
+
+        List<Addition> additions1 = new ArrayList<>();
+        for(Integer add : additions) {
+            additions1.add(DMJedisUtil.getAdditionById(String.valueOf(add)));
+        }
+        List<String> additions2 = new ArrayList<>();
+        for (Addition addition : additions1) {
+            additions2.add(addition.getAdditionName());
+        }
+        String additionType = StringUtils.join(additions2, "-");
+        carReceipts.setAdditions(additions1);
         carReceipts.setAdditionType(additionType);
         carReceipts.setSellTypeName(sellType.getSellType());
         carReceipts.setMoney(money);
@@ -133,96 +135,80 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
         }
         // 插入收款信息
         Integer integer = sellReceiptsMapper.insertGatheringMsg(gatheringMsg);
+        if (!integer.equals(1)) {
+            throw new RuntimeException("");
+        }
         carReceipts.setGatheringMsg(gatheringMsg);
-        System.err.println("integer=" + integer);
         carReceipts.setGatheringMsgId(gatheringMsg.getId());
-        System.err.println("gatheringMsg=" + gatheringMsg);
 
         // 插入报表数据
         Integer carReceiptsId = sellReceiptsMapper.insertCarReceiots(carReceipts);
-        if (carReceiptsId.equals("0") || carReceiptsId.equals(0)) {
-            return null;
+        if (!carReceiptsId.equals(1)) {
+            throw new RuntimeException("");
         }
-        carReceipts.setUser(userMapper.selectUserById(userId));
+        carReceipts.setUser(UserJedisUtil.getUserById(userId));
         carReceipts.setTpUser(tpUser);
         carReceipts.setTimeMsgs(getTimeMsg(carReceipts));
+        // cache
+        SellReceiptsJedisUtil.addSellReceipts(carReceipts);
         return carReceipts;
     }
 
     @Override
-    public List<CarReceipts> getReceiptsByGathering(User user) {
-        // 新集合
-        List<CarReceipts> carReceiptss = new ArrayList<>();
+    public List<CarReceipts> getReceiptsByGathering(User user) throws RuntimeException {
         //获取全部收款中单据数据
-        List<CarReceipts> carReceipts = sellReceiptsMapper.getCarReceiptsByStatus(2,user.getId());
-        System.err.println(carReceipts);
+        List<CarReceipts> carReceipts = SellReceiptsJedisUtil.getReceiptsByStatusAndGatheringUser(2, user);
+        // 到店确认的
+        carReceipts = (List<CarReceipts>) CollectionUtils.union(carReceipts,SellReceiptsJedisUtil.getReceiptsByStatusAndGatheringUser(1, user));
         // 补充收款收款信息
-        for (CarReceipts carReceipts1 : carReceipts) {
-            carReceipts1.setUser(userMapper.selectUserById(carReceipts1.getUserId()));
-            carReceipts1.setTpUser(userMapper.selectUserById(carReceipts1.getThirdPartyTerraceId()));
-            // 获取每个单据的收款信息
-            GatheringMsg gatheringMsg = sellReceiptsMapper.getGatheringMsgById(carReceipts1.getGatheringMsgId());
-            // 判断 收款人id是该用户 且 销售单据的收款信息id 是收款信息id
-            if (gatheringMsg.getGatheringUserId() == user.getId() && carReceipts1.getGatheringMsgId() == gatheringMsg.getId()) {
-                // 将收款信息添加到单据中
-                carReceipts1.setGatheringMsg(gatheringMsg);
-                // 修改时间格式
-                carReceipts1.setTimeMsgs(getTimeMsg(carReceipts1));
-                System.err.println();
-                // 添加单据到新的集合中
-                carReceiptss.add(carReceipts1);
-            }
-        }
-        return carReceiptss;
-    }
-
-    @Override
-    public List<CarReceipts> getReceiptsByReach(User user) {
-        //获取该平台待到店确认的单据
-        List<CarReceipts> carReceipts = sellReceiptsMapper.getCarReceiptsByStatusOfTH(1, user.getId());
         carReceipts = getCarreceipts(carReceipts);
         return carReceipts;
     }
 
     @Override
-    public List<CarReceipts> getReceiptsByInstall(User user) {
-        // 获取该平台安装待确认的单据
-        List<CarReceipts> carReceipts = sellReceiptsMapper.getCarReceiptsByStatusOfTH(3, user.getId());
-        System.err.println(user);
-
+    public List<CarReceipts> getReceiptsByReach(User user) throws RuntimeException {
+        //获取该平台待到店确认的单据
+        List<CarReceipts> carReceipts = SellReceiptsJedisUtil.getCarReceiptsByStatusOfTH(1, user);
         carReceipts = getCarreceipts(carReceipts);
-        System.err.println(carReceipts);
+        return carReceipts;
+    }
+
+    @Override
+    public List<CarReceipts> getReceiptsByInstall(User user) throws RuntimeException {
+        // 获取该平台安装待确认的单据
+        List<CarReceipts> carReceipts = SellReceiptsJedisUtil.getCarReceiptsByStatusOfTH(3, user);
+        carReceipts = getCarreceipts(carReceipts);
         return carReceipts;
     }
 
     @Transactional
     @Override
-    public Integer checkReceipts(String token, String type, Integer id, String checkTime, Map map) {
+    public Integer checkReceipts(String token, String type, Integer id, String checkTime, Map map) throws RuntimeException {
         Map data = (Map) map.get("data");
         // 获取操作人用户信息
-        User user = userMapper.selectUserById(userTokenMapper.getUserIdByToken(token));
+        User user = UserJedisUtil.getUserById(UserJedisUtil.getUserIdByToken(token));
         //获取该id单据
-        CarReceipts carReceipts = sellReceiptsMapper.getCarReceiptsById(id);
+        CarReceipts carReceipts = SellReceiptsJedisUtil.getSellReceiptsById(String.valueOf(id));
         if (user == null || carReceipts == null || checkTime.isEmpty()) {
-            throw new RuntimeException();
+            throw new RuntimeException("");
         }
         List<CarReceipts> carReceiptss = new ArrayList<>();
         carReceiptss.add(carReceipts);
         // 补全信息
         carReceipts = getCarreceipts(carReceiptss).get(0);
         // 到店确认
-        System.err.println(carReceipts);
         if (type.equals("reachCheck") && carReceipts.getReceiptsStatus().equals(1) && carReceipts.getReceiptsReachCheck() == null) {
             // 打桩
-            System.err.println("true");
             carReceipts.setReceiptsReachCheck(checkTime);
             carReceipts.setReceiptsStatus(2);
             Integer row = sellReceiptsMapper.updateCheckTime(carReceipts, "reachCheck");
-            System.err.println("type"+type);
-            System.err.println(carReceipts);
-            if (row.equals(0) || row.equals("0")) {
+            if (!row.equals(1)) {
                 throw new RuntimeException();
             } else {
+                // update carReceipts cache
+                carReceipts = sellReceiptsMapper.getCarReceiptsById(carReceipts.getId());
+                carReceipts.setGatheringMsg(SellReceiptsJedisUtil.getGatheringMsgById(carReceipts.getGatheringMsgId()));
+                SellReceiptsJedisUtil.updateSellReceipts(carReceipts, "reachCheck");
                 return row;
             }
             // 收款确认
@@ -230,59 +216,68 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
             carReceipts.getGatheringMsg().setGatheringCheckTime(checkTime);
             carReceipts.getGatheringMsg().setText((String) data.get("text"));
             carReceipts.setReceiptsStatus(3);
+            // 更新收款信息
             Integer row = sellReceiptsMapper.updateGatherimgMsg(carReceipts.getGatheringMsg());
-            if (row > 0){
+            if (!row.equals(1)) {
+                throw new RuntimeException("");
+
+            } else {
                 carReceipts.setCollectionTime(checkTime);
+                // 更新收款信息
                 Integer integer = sellReceiptsMapper.updateCheckTime(carReceipts, type);
+                if (!integer.equals(1)) {
+                    throw new RuntimeException("");
+                } else {
+                    //update cache
+                    carReceipts = sellReceiptsMapper.getCarReceiptsById(carReceipts.getId());
+                    carReceipts.setGatheringMsg(sellReceiptsMapper.getGatheringMsgById(carReceipts.getGatheringMsgId()));
+                    carReceipts.setGatheringMsg(sellReceiptsMapper.getGatheringMsgById(carReceipts.getGatheringMsgId()));
+                    SellReceiptsJedisUtil.updateSellReceipts(carReceipts, "gatheringCheck");
+                }
                 return integer;
             }
-            throw new RuntimeException();
             // 安装确认
         } else if (type.equals("installCheck") && carReceipts.getReceiptsStatus() == 3 && StringUtils.isEmpty(carReceipts.getGatheringMsg().getGatheringCheckTime())) {
-            carReceipts.setThirdPartyCheckTime(checkTime);
-
+            carReceipts.setThirdPartyCheckTime(checkTime); //废弃
             return null;
         } else {
-            return null;
+            throw new RuntimeException("");
         }
     }
 
     @Override
-    public boolean uploadFile(Map map, MultipartFile file) {
+    @Transactional
+    public boolean uploadFile(Map map, MultipartFile file) throws RuntimeException {
         Random random = new Random();
-        System.err.println(map);
-        System.err.println(file);
         //获取上传文件操作类型
         String type = (String) map.get("fileType");
         String userId = String.valueOf(map.get("fileUserId"));
         // 获取文件名
         String fileName = file.getOriginalFilename();
-        System.err.println("上传的文件名为：" + fileName);
         // 获取文件的后缀名
         String suffixName = fileName.substring(fileName.lastIndexOf("."));
-        System.err.println("上传的后缀名为：" + suffixName);
-        String faset = fileName.substring(0,fileName.lastIndexOf("."))+random.nextInt(10000);
-
-        System.err.println("文件名：" + faset);
+        String faset = fileName.substring(0, fileName.lastIndexOf(".")) + random.nextInt(10000);
         fileName = faset + suffixName;
         // 文件上传后的路径
-        String filePath = uploadDir+userId+"/";
+        String filePath = uploadDir + userId + "/";
         // 解决中文问题，liunx下中文路径，图片显示问题
         // fileName = UUID.randomUUID() + suffixName;
         File dest = new File(filePath + fileName);
         ImageUrl imageUrl = new ImageUrl();
         //判断是否收款上传图片
         if (type.equals("gatheringCheck")) {
-            CarReceipts carReceipts = sellReceiptsMapper.getCarReceiptsById(Integer.parseInt((String) map.get("fileId")));
-            if (carReceipts != null){
-
+            CarReceipts carReceipts = SellReceiptsJedisUtil.getSellReceiptsById((String) map.get("fileId"));
+            if (carReceipts != null) {
                 imageUrl.setMsgId(Integer.parseInt((String) map.get("fileId")));
-                imageUrl.setUrl("http://49.234.210.89/images/"+userId+"/"+fileName);
+                imageUrl.setUrl("http://49.234.210.89/images/" + userId + "/" + fileName);
 
             } else {
                 return false;
             }
             Integer row = sellReceiptsMapper.insertImageUrl(imageUrl);
+            if (!row.equals(1)){
+                throw new RuntimeException("");
+            }
             // 检测是否存在目录
             if (!dest.getParentFile().exists()) {
                 dest.getParentFile().mkdirs();
@@ -290,35 +285,23 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
             try {
                 file.transferTo(dest);
                 System.err.println("上传成功后的文件路径未：" + filePath + fileName);
-                if (row > 0) {
-                    return true;
-                } else {
-                    return false;
-                }
-            } catch (IllegalStateException e) {
-                e.printStackTrace();
-                return false;
-            } catch (IOException e) {
-                e.printStackTrace();
-                return false;
+                return true;
+            } catch (Exception e) {
+                throw new RuntimeException("");
             }
         }
-        return false;
+        throw new RuntimeException("");
     }
 
     @Override
-    public List<CarReceipts> getMyReceipts(String token) {
-        User user = userUtil.getUserByToken(token);
-        List<CarReceipts> carReceipts = new ArrayList<>();
-        System.err.println(user);
+    public List<CarReceipts> getMyReceipts(String token) throws RuntimeException{
+        User user = UserJedisUtil.getUserByToken(token);
+        List<CarReceipts> carReceipts;
         // 平台用户
-        if ("R1004".equals(user.getRoleNum())){
-            carReceipts = sellReceiptsMapper.getCarReceiptsByTPId(user.getId());
+        if ("R1004".equals(user.getRoleNum())) {
+            carReceipts = SellReceiptsJedisUtil.getSellReceiptsByInstallUser(new Date(),user);
         } else {
-            carReceipts = sellReceiptsMapper.getCarReceiptsByCreateId(user.getId());
-        }
-        if (carReceipts == null){
-            return null;
+            carReceipts = SellReceiptsJedisUtil.getSellReceiptsByCreateUser(new Date(),user);
         }
         // 补全信息
         carReceipts = getCarreceipts(carReceipts);
@@ -326,16 +309,17 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
     }
 
     @Override
-    public boolean cancellationCarReceiptsById(String token,Integer id) {
-        User user = userUtil.getUserByToken(token);
+    @Transactional
+    public boolean cancellationCarReceiptsById(String token, Integer id) throws RuntimeException {
+        User user = UserJedisUtil.getUserByToken(token);
         // id 为null 不能作废 或者操作用户为null 不能作废
-        if (id == null || user == null){
-            return false;
+        if (id == null || user == null) {
+            throw new RuntimeException("");
         }
-        CarReceipts carReceipts = sellReceiptsMapper.getCarReceiptsById(id);
+        CarReceipts carReceipts = SellReceiptsJedisUtil.getSellReceiptsById(String.valueOf(id));
         // 单据已报废或已完成,或者单据的创建人用户ID不匹配 不能作废
-        if (carReceipts.getReceiptsStatus() == 0 || carReceipts.getReceiptsStatus() == 4 || carReceipts.getUserId() != user.getId()){
-            return false;
+        if (carReceipts == null || carReceipts.getReceiptsStatus() == 0 || carReceipts.getReceiptsStatus() == 4 || carReceipts.getUserId() != user.getId()) {
+            throw new RuntimeException("");
         }
         // 修改该单据状态，更新单据信息
         // 更新状态
@@ -345,21 +329,21 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
         // 更新到数据库
         Integer row = sellReceiptsMapper.updateCarReceiptsStatus(carReceipts);
         // 不为0更新成功
-        if (row != 0){
-            return true;
+        if (!row.equals(1)) {
+            throw new RuntimeException("");
         }
-        return false;
+        // update cache
+        SellReceiptsJedisUtil.updateSellReceipts(carReceipts,"scrap");
+        return true;
     }
 
     @Override
-    public List<CarReceipts> searchQueryDate(Map map) throws ParseException {
+    public List<CarReceipts> searchQueryDate(Map map) throws RuntimeException {
         QueryCRMsg queryCRMsg = new QueryCRMsg();
-        System.err.println(map);
-        List<CarReceipts> carReceipts = new ArrayList<>();
         // 判断是大厅还是我的(DT/YD/PT)
+        // 获取数据
         String type = String.valueOf(map.get("type"));
         String userId = String.valueOf(map.get("userId"));
-        // 获取数据
         String sellName = String.valueOf(map.get("sellName"));
         String TPId = String.valueOf(map.get("TPId"));
         String clientName = String.valueOf(map.get("clientName"));
@@ -367,130 +351,173 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
         String startingDate = String.valueOf(map.get("startingDate"));
         String endDate = String.valueOf(map.get("endDay"));
         String status = String.valueOf(map.get("status"));
-        String page = String.valueOf(map.get("page"));
-        String count = String.valueOf(map.get("count"));
-
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        Integer page = Integer.valueOf(String.valueOf(map.get("page")));
+        Integer count = Integer.valueOf(String.valueOf(map.get("count")));
         // 查询时间类型
         String checkTimeType = String.valueOf(map.get("checkTimeType"));
         // 销售类型
         String sellType = String.valueOf(map.get("sellType"));
         // 附加业务
-        List<String> additionType = (List<String>) map.get("additionType");
+        List<Integer> additionType = (List<Integer>) map.get("additionType");
         // 渠道
         String channel = String.valueOf(map.get("channel"));
-        // 获取角色省份
-        List<String> province = userUtil.getProvinceByUser(userMapper.selectUserById(Integer.valueOf(userId)));
 
-        if (!StringUtils.isEmpty(startingDate)){
-            Date date = sdf.parse(startingDate);
-            startingDate = String.valueOf(date.getTime());
-        }
-        if (!StringUtils.isEmpty(endDate)){
-            Date date = sdf.parse(endDate);
-            endDate = String.valueOf(date.getTime());
-        }
-        if (!StringUtils.isEmpty(sellName)){
-            sellName = "%"+sellName+"%";
-        } else {
-            sellName = "%%";
-        }
-        if (!StringUtils.isEmpty(clientName)){
-            clientName = "%"+clientName+"%";
-        } else {
-            clientName = "%%";
-        }
-        if (!StringUtils.isEmpty(clientCarNum)){
-            clientCarNum = "%"+clientCarNum+"%";
-        } else {
-            clientCarNum = "%%";
-        }
-
-        List<User> users = userMapper.getUserByLikeUserName(sellName);
         // 查询信息封装
         queryCRMsg.setUserId(Integer.valueOf(userId));
         queryCRMsg.setType(type);
         queryCRMsg.setStartingDate(startingDate);
         queryCRMsg.setEndDate(endDate);
-        queryCRMsg.setSellName(sellName);
         queryCRMsg.setPage(Integer.valueOf(page));
         queryCRMsg.setCount(Integer.valueOf(count));
-
-        if (!StringUtils.isEmpty(sellType)){
+        queryCRMsg.setCheckTimeType(checkTimeType);
+        if (!CollectionUtils.isEmpty(additionType)){
+            queryCRMsg.setAdditionType(additionType);
+        }
+        if (!StringUtils.isEmpty(clientName)){
+            queryCRMsg.setClientName(clientName);
+        }
+        if (!StringUtils.isEmpty(clientCarNum)){
+            queryCRMsg.setClientCarNum(clientCarNum);
+        }
+        if (!StringUtils.isEmpty(sellName)){
+            queryCRMsg.setSellName(sellName);
+        }
+        if (!StringUtils.isEmpty(sellType)) {
             queryCRMsg.setSellType(sellType);
         }
-        if (!StringUtils.isEmpty(TPId)){
+        if (!StringUtils.isEmpty(TPId)) {
             queryCRMsg.setTPId(Integer.valueOf(TPId));
         }
-        queryCRMsg.setClientName(clientName);
-        queryCRMsg.setClientCarNum(clientCarNum);
-        queryCRMsg.setCheckTimeType(checkTimeType);
-
-
-        if (!StringUtils.isEmpty(channel)){
+        if (!StringUtils.isEmpty(channel)) {
             queryCRMsg.setChannel(channel);
         }
-        if (!StringUtils.isEmpty(status)){
+        if (!StringUtils.isEmpty(status)) {
             queryCRMsg.setStatus(Integer.valueOf(status));
         }
-
-
-        List<CarReceipts> carReceiptsList = new ArrayList<>();
-        if (!StringUtils.isEmpty(type)){
-
-            if ("DT".equals(type)){
-                // 大厅查询
-                queryCRMsg.setUsers(users);
-                queryCRMsg.setProvinces(province);
-                List<CarReceipts> carReceipts1 = sellReceiptsMapper.searchCarReceipts(queryCRMsg);
-                if (!CollectionUtils.isEmpty(additionType)){
-                    for (CarReceipts carReceipts2 : carReceipts1){
-                        List<String> list = Arrays.asList(carReceipts2.getAdditionType().split("-"));
-                        // 附加业务是否包含查询的附加业务
-                        if (CollectionUtils.isSubCollection(additionType,list)){
-                            carReceiptsList.add(carReceipts2);
-                        }
-                    }
-                    // 补全信息
-                    carReceiptsList = getCarreceipts(carReceiptsList);
-                    return carReceiptsList;
-                }
-                // 补全信息
-                carReceipts1 = getCarreceipts(carReceipts1);
-                return carReceipts1;
-            } else if ("PT".equals(type) || "YD".equals(type)){
-                // 我的
-                List<CarReceipts> carReceipts1 = sellReceiptsMapper.searchCarReceipts(queryCRMsg);
-
-                if (!CollectionUtils.isEmpty(additionType)){
-                    for (CarReceipts carReceipts2 : carReceipts1){
-                        List<String> list = Arrays.asList(carReceipts2.getAdditionType().split("-"));
-                        // 附加业务是否包含查询的附加业务
-                        if (CollectionUtils.isSubCollection(additionType,list)){
-                            carReceiptsList.add(carReceipts2);
-                        }
-                    }
-                    // 补全信息
-                    carReceiptsList = getCarreceipts(carReceiptsList);
-                    return carReceiptsList;
-                }
-                // 补全信息
-                carReceipts1 = getCarreceipts(carReceipts1);
-                return carReceipts1;
-            } else {
-                return null;
+        if (!StringUtils.isEmpty(type)) {
+            // 获取角色省份
+            User user ;
+            List<Province> provinces;
+            List<User> userList = new ArrayList<>();
+            // 查询时间类型
+            String checkTimeTypeq = null;
+            // 创建人：id or 安装人：id
+            String relatingType = null;
+            if (queryCRMsg.getCheckTimeType().equals("创建时间")) {
+                checkTimeTypeq = SellReceiptsJedisUtil.SELL_RECEIPTS_CREATE_TIME_DATE;
+            } else if (queryCRMsg.getCheckTimeType().equals("收款时间")){
+                checkTimeTypeq = SellReceiptsJedisUtil.SELL_RECEIPTS_GATHERING_TIME_DATE;
+            } else if (queryCRMsg.getCheckTimeType().equals("安装时间")) {
+                checkTimeTypeq = SellReceiptsJedisUtil.SELL_RECEIPTS_EQUIPMENT_INSTALL_TIME_DATE;
             }
+            if (queryCRMsg.getType().equals("DT")) {
+                user = UserJedisUtil.getUserById(Integer.valueOf(userId));
+                provinces = CityJedisUtil.getBeProvincesByUser(user);
+                if (!StringUtils.isEmpty(sellName)){
+                    queryCRMsg.setSellName(sellName);
+                    userList = UserJedisUtil.getUserByNameLike(sellName,provinces);
+                } else {
+                    userList = UserJedisUtil.getUserByProvinces(provinces);
+                }
+                queryCRMsg.setUsers(userList);
+                relatingType = SellReceiptsJedisUtil.SELL_RECEIPTS_CREATE_USER_ID;
+                queryCRMsg.setUsers(userList);
+            } else if (queryCRMsg.getType().equals("YD")) {
+                user = UserJedisUtil.getUserById(Integer.valueOf(userId));
+                userList.add(user);
+                queryCRMsg.setUsers(userList);
+                relatingType = SellReceiptsJedisUtil.SELL_RECEIPTS_CREATE_USER_ID;
+            } else if (queryCRMsg.getType().equals("PT")) {
+                user = UserJedisUtil.getUserById(Integer.valueOf(userId));
+                userList.add(user);
+                queryCRMsg.setUsers(userList);
+                relatingType = SellReceiptsJedisUtil.SELL_RECEIPTS_INSTALL_TP_ID;
+            } else {
+                throw new RuntimeException("");
+            }
+            List<String> timeStrings = new ArrayList<>();
+            // 根据时间范围获取单据并集
+            List<String> days = PublicUtil.getDays(startingDate, endDate);
+            for (String d : days) {
+                timeStrings = (List<String>) CollectionUtils.union(timeStrings, SellReceiptsJedisUtil.getCarReceiptsByTimeScope(d, checkTimeTypeq));
+            }
+            List<String> strings = new ArrayList<>();
+
+            for (User u : userList) {
+                // 根据用户信息获取每个用户+条件单据交集
+                List<String> stringSet = new ArrayList<>();
+                // 创建或安装人
+                stringSet =  SellReceiptsJedisUtil.getSellReceiptsByCreateOrInstallUser(u,relatingType);
+                // 销售类型
+                if (!StringUtils.isEmpty(queryCRMsg.getSellType())) {
+                    stringSet = (List<String>) CollectionUtils.intersection(stringSet, SellReceiptsJedisUtil.getSellReceiptsByTAndUser(queryCRMsg.getSellType(), u, relatingType, SellReceiptsJedisUtil.SELL_RECEIPTS_SELL_TYPE_ID));
+                }
+                // 平台id
+                if (queryCRMsg.getTPId() != null) {
+                    stringSet = (List<String>) CollectionUtils.intersection(stringSet, SellReceiptsJedisUtil.getSellReceiptsByTAndUser(String.valueOf(queryCRMsg.getTPId()), u, relatingType, SellReceiptsJedisUtil.SELL_RECEIPTS_INSTALL_TP_ID));
+                }
+                // 客户姓名
+                if (!StringUtils.isEmpty(queryCRMsg.getClientName())) {
+                    stringSet = (List<String>) CollectionUtils.intersection(stringSet, SellReceiptsJedisUtil.getSellReceiptsByClientNameLike(queryCRMsg.getClientName(), u, relatingType, SellReceiptsJedisUtil.SELL_RECEIPTS_CLIENT_NAME_LIKE));
+                }
+                // 客户车牌
+                if (!StringUtils.isEmpty(queryCRMsg.getClientCarNum())) {
+                    stringSet = (List<String>) CollectionUtils.intersection(stringSet, SellReceiptsJedisUtil.getSellReceiptsByTAndUser(queryCRMsg.getClientCarNum(), u, relatingType, SellReceiptsJedisUtil.SELL_RECEIPTS_CLIENT_CAR_NUM));
+                }
+                // 渠道信息
+                if (!StringUtils.isEmpty(queryCRMsg.getChannel())) {
+                    stringSet = (List<String>) CollectionUtils.intersection(stringSet, SellReceiptsJedisUtil.getSellReceiptsByTAndUser(queryCRMsg.getChannel(), u, relatingType, SellReceiptsJedisUtil.SELL_RECEIPTS_CHANNEL_ID));
+                }
+                // 状态
+                if (queryCRMsg.getStatus() != null) {
+                    stringSet = (List<String>) CollectionUtils.intersection(stringSet, SellReceiptsJedisUtil.getSellReceiptsByTAndUser(String.valueOf(queryCRMsg.getStatus()), u, relatingType, SellReceiptsJedisUtil.SELL_RECEIPTS_STATUS));
+                }
+                // 附加业务
+                if (!CollectionUtils.isEmpty(queryCRMsg.getAdditionType())) {
+                    stringSet = (List<String>) CollectionUtils.intersection(stringSet, SellReceiptsJedisUtil.getSellReceiptsByAdditionAndUser(queryCRMsg.getAdditionType(), u, relatingType));
+                }
+                // 将每个用户+条件的交集,并集到新的集合中
+                strings = (List<String>) CollectionUtils.union(strings, stringSet);
+            }
+            // 将用户+条件 or 时间范围 交集
+            strings = (List<String>) CollectionUtils.intersection(strings, timeStrings);
+
+            // 排序 分页
+            List<CarReceipts> carReceipts = getCarReceiptsByPaging(page,count, new HashSet<>(strings));
+            // 补充信息
+            carReceipts = getCarreceipts(carReceipts);
+
+            return carReceipts;
 
 
-        } else {
-            return null;
+
+
         }
+        return new ArrayList<>();
+    }
 
-
-
-
-
-
+    /**
+     * 获取排序后
+     * @param page
+     * @param count
+     * @param strings
+     * @return
+     */
+    public List<CarReceipts> getCarReceiptsByPaging(Integer page,Integer count,Set<String> strings){
+        //排序
+        strings = new TreeSet<>(strings);
+        List<String> list = new ArrayList<>(strings);
+        List<CarReceipts> carReceipts = new ArrayList<>();
+        int datePage = page * count;
+        int dateCount = (page + 1) * count;
+        int size = list.size();
+        if (dateCount > size) {
+            dateCount = size;
+        }
+        for (int i = datePage; i < dateCount; i++) {
+            carReceipts.add(SellReceiptsJedisUtil.getSellReceiptsById(list.get(i)));
+        }
+        return carReceipts;
     }
 
     @Transactional
@@ -501,24 +528,16 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
         String equipment = String.valueOf(map.get("equipment"));
         String carNum = String.valueOf(map.get("carNum"));
         String carReceiptsId = String.valueOf(map.get("carReceiptsId"));
-        if (StringUtils.isEmpty(userId) || StringUtils.isEmpty(iccid) || StringUtils.isEmpty(equipment) || StringUtils.isEmpty(carNum) || StringUtils.isEmpty(carReceiptsId)){
+        if (StringUtils.isEmpty(userId) || StringUtils.isEmpty(iccid) || StringUtils.isEmpty(equipment) || StringUtils.isEmpty(carNum) || StringUtils.isEmpty(carReceiptsId)) {
             throw new RuntimeException("数据请求错误!#1");
         }
         // 获取单据
-        CarReceipts carReceipts = sellReceiptsMapper.getCarReceiptsById(Integer.valueOf(carReceiptsId));
-        Integer row = dataManagementMapper.getIccid(iccid+"_");
-        EquipmentMsg equipmentMsg = dataManagementMapper.getEquipmentMsgById(Integer.valueOf(equipment));
-        System.err.println(map);
-        System.err.println(carReceipts == null);
-        System.err.println(carReceipts.getReceiptsStatus().equals(4));
-        System.err.println(carReceipts.getThirdPartyTerraceId());
-        System.err.println(!userId.equals(String.valueOf(carReceipts.getThirdPartyTerraceId())));
-        System.err.println(!carNum.equals(carReceipts.getClientCarNum()));
-        System.err.println(row != 1 );
-        System.err.println(equipmentMsg == null);
+        CarReceipts carReceipts = SellReceiptsJedisUtil.getSellReceiptsById(carReceiptsId);
+        boolean row = IccidJedisUtil.checkIccid(iccid);
+        EquipmentMsg equipmentMsg = DMJedisUtil.getEquipmentMsgById(Integer.valueOf(equipment));
         // 判断
         if (carReceipts == null || carReceipts.getReceiptsStatus().equals(4) || !userId.equals(String.valueOf(carReceipts.getThirdPartyTerraceId())) ||
-                !carNum.equals(carReceipts.getClientCarNum()) || row != 1 || equipmentMsg == null){
+                !carNum.equals(carReceipts.getClientCarNum()) || !row || equipmentMsg == null) {
             throw new RuntimeException("数据请求错误!#2");
         } else {
             // 更新数据
@@ -526,25 +545,49 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
             carReceipts1.setId(Integer.valueOf(carReceiptsId));
             carReceipts1.setReceiptsStatus(4);
             // 获取iccid信息
-            String iccid1 = dataManagementMapper.getIccidByiccid(iccid+"_");
+            Iccid iccid1 = IccidJedisUtil.getIccidByTop19(iccid);
             // 更新iccid 状态
             Iccid iccid2 = new Iccid();
-            iccid2.setIccid(iccid1);
+            iccid2.setIccid(iccid1.getIccid());
             iccid2.setStatus(0);
             Integer row1 = dataManagementMapper.updateIccid(iccid2);
-            carReceipts1.setIccid(iccid1);
+            carReceipts1.setIccid(iccid1.getIccid());
+            // 获取库存信息
+            //
+            InventoryMsg inventoryMsg = dataManagementMapper.getInventoryMsgByEquipmentMsgIdAndUserId(equipmentMsg.getId(), Integer.valueOf(userId));
+            // 判断库存是否大于0
+            if (inventoryMsg.getAwaitInstall()<1){
+                throw  new RuntimeException("库存小于1，请检查库存！");
+            }
+            //更新库存信息
+            InventoryMsg inventoryMsg1 = new InventoryMsg();
+            inventoryMsg1.setId(inventoryMsg.getId());
+            inventoryMsg1.setAwaitInstall(-1);
+            Integer integer = dataManagementMapper.updateInventoryMsg(inventoryMsg1);
+            if (!integer.equals(1)){
+                throw new RuntimeException("更新库存失败！");
+            }
+
             // 添加设备信息
             carReceipts1.setEquipmentBrand(equipmentMsg.getEquipmentBrand());
             carReceipts1.setEquipmentTypeNum(equipmentMsg.getEquipmentTypeNum());
             carReceipts1.setSize(equipmentMsg.getSize());
             carReceipts1.setThirdPartyCheckTime(String.valueOf(System.currentTimeMillis()));
             Integer line = sellReceiptsMapper.updateCarReceipts(carReceipts1);
-
-            if (row1 != 1 || line != 1){
+            if (row1 != 1 || line != 1) {
                 throw new RuntimeException("数据请求错误!#3");
             }
-        }
+            // 更新库存信息
+            inventoryMsg1 = dataManagementMapper.getInventoryMsgById(inventoryMsg1.getId());
+            DMJedisUtil.updateInventoryMsg(inventoryMsg1);
+            // 更新缓存 iccid
+            iccid1 = dataManagementMapper.getIccid(iccid+"_");
 
+            IccidJedisUtil.updateIccid(iccid1);
+            // 更新单据信息缓存
+            carReceipts = sellReceiptsMapper.getCarReceiptsById(Integer.valueOf(carReceiptsId));
+            SellReceiptsJedisUtil.updateSellReceipts(carReceipts,"installCheck");
+        }
 
 
     }
@@ -556,29 +599,26 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
      * @return
      */
     public List<TimeMsg> getTimeMsg(CarReceipts carReceipts) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         List<TimeMsg> timeMsgs = new ArrayList<>();
-
         // 变更创建时间格式
         TimeMsg timeMsg = new TimeMsg();
         timeMsg.setTypeName("创建时间");
-        timeMsg.setTypeTime(sdf.format(new Date(Long.parseLong(carReceipts.getCreateTime()))));
+        timeMsg.setTypeTime(PublicUtil.timestampToString(carReceipts.getCreateTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
         timeMsg.setColor("#0bbd87");
         timeMsgs.add(timeMsg);
 
         // 变更预计到店时间格式
         timeMsg = new TimeMsg();
         timeMsg.setTypeName("预计到店时间");
-        timeMsg.setTypeTime(sdf.format(new Date(Long.parseLong(carReceipts.getPredictInstallTime()))));
+        timeMsg.setTypeTime(PublicUtil.timestampToString(carReceipts.getPredictInstallTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
         timeMsg.setColor("#0bbd87");
         timeMsgs.add(timeMsg);
 
         // 变更到店时间格式
         timeMsg = new TimeMsg();
         timeMsg.setTypeName("到店确认");
-        System.err.println(carReceipts);
-        if (!StringUtils.isEmpty(carReceipts.getReceiptsReachCheck()) ) {
-            timeMsg.setTypeTime(sdf.format(new Date(Long.parseLong(carReceipts.getReceiptsReachCheck()))));
+        if (!StringUtils.isEmpty(carReceipts.getReceiptsReachCheck())) {
+            timeMsg.setTypeTime(PublicUtil.timestampToString(carReceipts.getReceiptsReachCheck(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
             timeMsg.setColor("#0bbd87");
             timeMsgs.add(timeMsg);
         } else {
@@ -592,7 +632,7 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
         timeMsg = new TimeMsg();
         timeMsg.setTypeName("收款确认");
         if (!StringUtils.isEmpty(carReceipts.getGatheringMsg().getGatheringCheckTime())) {
-            timeMsg.setTypeTime(sdf.format(new Date(Long.parseLong(carReceipts.getGatheringMsg().getGatheringCheckTime()))));
+            timeMsg.setTypeTime(PublicUtil.timestampToString(carReceipts.getGatheringMsg().getGatheringCheckTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
             timeMsg.setColor("#0bbd87");
             timeMsgs.add(timeMsg);
         } else {
@@ -606,7 +646,7 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
         timeMsg = new TimeMsg();
         timeMsg.setTypeName("安装确认");
         if (!StringUtils.isEmpty(carReceipts.getThirdPartyCheckTime())) {
-            timeMsg.setTypeTime(sdf.format(new Date(Long.parseLong(carReceipts.getThirdPartyCheckTime()))));
+            timeMsg.setTypeTime(PublicUtil.timestampToString(carReceipts.getThirdPartyCheckTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
             timeMsg.setColor("#0bbd87");
             timeMsgs.add(timeMsg);
         } else {
@@ -619,8 +659,8 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
         // 变更作废时间格式
         timeMsg = new TimeMsg();
         timeMsg.setTypeName("作废时间");
-        if (carReceipts.getReceiptsStatus() == 0 &&  carReceipts.getCancellationTime() != "") {
-            timeMsg.setTypeTime(sdf.format(new Date(Long.parseLong(carReceipts.getCancellationTime()))));
+        if (carReceipts.getReceiptsStatus() == 0 && carReceipts.getCancellationTime() != "") {
+            timeMsg.setTypeTime(PublicUtil.timestampToString(carReceipts.getCancellationTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
             timeMsg.setColor("#0bbd87");
             timeMsgs.add(timeMsg);
         }
@@ -637,15 +677,15 @@ public class SellReceiptsServiceImpl implements SellReceiptsService {
         List<CarReceipts> carReceiptss = new ArrayList<>();
         if (carReceipts != null) {
             for (CarReceipts carReceipts1 : carReceipts) {
-                carReceipts1.setUser(userMapper.selectUserById(carReceipts1.getUserId()));
-                carReceipts1.setTpUser(userMapper.selectUserById(carReceipts1.getThirdPartyTerraceId()));
+                carReceipts1.setUser(UserJedisUtil.getUserById(carReceipts1.getUserId()));
+                carReceipts1.setTpUser(UserJedisUtil.getUserById(carReceipts1.getThirdPartyTerraceId()));
                 // 获取每个单据的收款信息
-                GatheringMsg gatheringMsg = sellReceiptsMapper.getGatheringMsgById(carReceipts1.getGatheringMsgId());
+                GatheringMsg gatheringMsg = SellReceiptsJedisUtil.getGatheringMsgById(carReceipts1.getGatheringMsgId());
                 // 补全收款图片地址
-                List<ImageUrl> imageUrls = sellReceiptsMapper.getImageUrls(carReceipts1.getId());
-                if (imageUrls != null){
+                List<ImageUrl> imageUrls = SellReceiptsJedisUtil.getSellReceiptsImageUrlById(carReceipts1.getId());
+                if (!CollectionUtils.isEmpty(imageUrls)) {
                     List<String> urls = new ArrayList<>();
-                    for (ImageUrl imageUrl: imageUrls){
+                    for (ImageUrl imageUrl : imageUrls) {
                         urls.add(imageUrl.getUrl());
                     }
                     carReceipts1.setImageUrls(urls);

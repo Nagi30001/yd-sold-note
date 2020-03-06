@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.management.relation.RoleUnresolved;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -189,6 +190,7 @@ public class DataManagementServiceImpl implements DataManagementService {
                 throw new RuntimeException("更新渠道信息错误！");
             }
             // update cache
+            channel = dataManagementMapper.getChannelById(channel.getId());
             DMJedisUtil.updateChannel(oldChannel, channel);
         }
         return channel;
@@ -208,7 +210,7 @@ public class DataManagementServiceImpl implements DataManagementService {
 
     @Override
     public List<InventoryMsg> getInventoryMsgByTPId(User user, String type) throws RuntimeException {
-        List<InventoryMsg> inventoryMsg = null;
+        List<InventoryMsg> inventoryMsg = new ArrayList<>();
         if (PLATFORM_ABBREVIATION.equals(type)) {
             inventoryMsg = DMJedisUtil.getInventoryMsgByTPId(user.getId());
             if (CollectionUtils.isEmpty(inventoryMsg)) {
@@ -278,9 +280,9 @@ public class DataManagementServiceImpl implements DataManagementService {
             transferMsg1.setRequestUser(UserJedisUtil.getUserById(transferMsg1.getRequestUserId()));
             transferMsg1.setConsigneeUser(UserJedisUtil.getUserById(transferMsg1.getConsigneeUserId()));
             transferMsg1.setEquipmentMsg(getEquipmentMsgById(transferMsg1.getEquipmentMsgId()));
-            transferMsg1.setRequestTime(PublicUtil.timestampToString(transferMsg1.getRequestTime(), PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
-            transferMsg1.setArriveTime(PublicUtil.timestampToString(transferMsg1.getArriveTime(), PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
-            transferMsg1.setScrapTime(PublicUtil.timestampToString(transferMsg1.getScrapTime(), PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
+            transferMsg1.setRequestTime(PublicUtil.timestampToString(transferMsg1.getRequestTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
+            transferMsg1.setArriveTime(PublicUtil.timestampToString(transferMsg1.getArriveTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
+            transferMsg1.setScrapTime(PublicUtil.timestampToString(transferMsg1.getScrapTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
         }
         return transferMsg;
     }
@@ -313,9 +315,9 @@ public class DataManagementServiceImpl implements DataManagementService {
             changeMsg1.setRequestUser(UserJedisUtil.getUserById(changeMsg1.getThirdPartyTerraceId()));
             changeMsg1.setCheckUser(UserJedisUtil.getUserById(changeMsg1.getCheckUserId()));
             changeMsg1.setEquipmentMsg(getEquipmentMsgById(changeMsg1.getEquipmentMsgId()));
-            changeMsg1.setRequestTime(PublicUtil.timestampToString(changeMsg1.getRequestTime(), PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
-            changeMsg1.setPassTime(PublicUtil.timestampToString(changeMsg1.getPassTime(), PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
-            changeMsg1.setCancellationTime(PublicUtil.timestampToString(changeMsg1.getCancellationTime(), PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
+            changeMsg1.setRequestTime(PublicUtil.timestampToString(changeMsg1.getRequestTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
+            changeMsg1.setPassTime(PublicUtil.timestampToString(changeMsg1.getPassTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
+            changeMsg1.setCancellationTime(PublicUtil.timestampToString(changeMsg1.getCancellationTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
         }
         return changeMsg;
     }
@@ -340,16 +342,16 @@ public class DataManagementServiceImpl implements DataManagementService {
             maintainMsg1.setRequestUser(UserJedisUtil.getUserById(maintainMsg1.getRequestUserId()));
             maintainMsg1.setConsigneeUser(UserJedisUtil.getUserById(maintainMsg1.getConsigneeUserId()));
             maintainMsg1.setEquipmentMsg(getEquipmentMsgById(maintainMsg1.getEquipmentMsgId()));
-            maintainMsg1.setRequestTime(PublicUtil.timestampToString(maintainMsg1.getRequestTime(), PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
-            maintainMsg1.setArriveTime(PublicUtil.timestampToString(maintainMsg1.getArriveTime(), PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
-            maintainMsg1.setScrapTime(PublicUtil.timestampToString(maintainMsg1.getScrapTime(), PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
+            maintainMsg1.setRequestTime(PublicUtil.timestampToString(maintainMsg1.getRequestTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
+            maintainMsg1.setArriveTime(PublicUtil.timestampToString(maintainMsg1.getArriveTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
+            maintainMsg1.setScrapTime(PublicUtil.timestampToString(maintainMsg1.getScrapTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
         }
         return maintainMsg;
     }
 
     @Override
     public List<PurchaseMsg> getPurchaseMsg(User user, String type) throws RuntimeException {
-        List<PurchaseMsg> purchaseMsg;
+        List<PurchaseMsg> purchaseMsg = new ArrayList<>();
         if (YOUDAO_ABBREVIATION.equals(type)) {
             List<Province> provinces = CityJedisUtil.getBeProvincesByUser(user);
             List<User> users = UserJedisUtil.getUserByProvinces(provinces);
@@ -371,13 +373,25 @@ public class DataManagementServiceImpl implements DataManagementService {
         } else {
             return null;
         }
+        // 对象排序
+        Collections.sort(purchaseMsg, new Comparator<PurchaseMsg>() {
+            @Override
+            public int compare(PurchaseMsg o1, PurchaseMsg o2) {
+                // 倒序
+                return o2.getPurchaseTime().compareTo(o1.getPurchaseTime());
+            }
+            @Override
+            public boolean equals(Object obj) {
+                return false;
+            }
+        });
         for (PurchaseMsg purchaseMs1 : purchaseMsg) {
             purchaseMs1.setPurchaseUser(UserJedisUtil.getUserById(purchaseMs1.getPurchaseUserId()));
             purchaseMs1.setConsigneeUser(UserJedisUtil.getUserById(purchaseMs1.getConsigneeUserId()));
             purchaseMs1.setEquipmentMsg(getEquipmentMsgById(purchaseMs1.getEquipmentMsgId()));
-            purchaseMs1.setPurchaseTime(PublicUtil.timestampToString(purchaseMs1.getPurchaseTime(), PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
-            purchaseMs1.setArriveTime(PublicUtil.timestampToString(purchaseMs1.getArriveTime(), PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
-            purchaseMs1.setScrapTime(PublicUtil.timestampToString(purchaseMs1.getScrapTime(), PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
+            purchaseMs1.setPurchaseTime(PublicUtil.timestampToString(purchaseMs1.getPurchaseTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
+            purchaseMs1.setArriveTime(PublicUtil.timestampToString(purchaseMs1.getArriveTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
+            purchaseMs1.setScrapTime(PublicUtil.timestampToString(purchaseMs1.getScrapTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
         }
         return purchaseMsg;
     }
@@ -401,7 +415,7 @@ public class DataManagementServiceImpl implements DataManagementService {
         for (ScrapMsg scrapMsg1 : scrapMsg) {
             scrapMsg1.setRequestUser(UserJedisUtil.getUserById(scrapMsg1.getRequestUserId()));
             scrapMsg1.setEquipmentMsg(getEquipmentMsgById(scrapMsg1.getEquipmentMsgId()));
-            scrapMsg1.setCreateTime(PublicUtil.timestampToString(scrapMsg1.getCreateTime(), PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
+            scrapMsg1.setCreateTime(PublicUtil.timestampToString(scrapMsg1.getCreateTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
         }
         return scrapMsg;
     }
@@ -502,6 +516,7 @@ public class DataManagementServiceImpl implements DataManagementService {
             // 判断是否有该设备库存
             for (InventoryMsg inventoryMsg : InventoryMsgs) {
                 if (inventoryMsg.getEquipmentMsgId() == purchaseMsg.getEquipmentMsgId()) {
+
                     index = true;
                     inventoryMsg1 = inventoryMsg;
                     break;
@@ -537,8 +552,9 @@ public class DataManagementServiceImpl implements DataManagementService {
                 // add cache
                 DMJedisUtil.addInventoryMsg(inventoryMsg);
             }
-            purchaseMsg.setPurchaseTime(PublicUtil.timestampToString(purchaseMsg.getPurchaseTime(), PublicUtil.SDF_YYYY_DD_MM_HH_MM_SS));
+            purchaseMsg.setPurchaseTime(PublicUtil.timestampToString(purchaseMsg.getPurchaseTime(), PublicUtil.SDF_YYYY_MM_DD_HH_MM_SS));
             // add PurchaseMsg cache
+            purchaseMsg = dataManagementMapper.getPurchaseMsgById(purchaseMsg.getId());
             DMJedisUtil.addPurchaseMsg(purchaseMsg);
             return purchaseMsg;
         }
@@ -567,14 +583,24 @@ public class DataManagementServiceImpl implements DataManagementService {
             purchaseMsg1.setScrapTime(String.valueOf(System.currentTimeMillis()));
             // 修改状态
             Integer row = dataManagementMapper.updatePurchaseMsgStatus(purchaseMsg1);
-            System.err.println(row);
             if (!row.equals(1)) {
                 throw new RuntimeException("更新采购单据状态失败");
             }
             // 减少库存的采购中数量
-            purchaseMsg1 = dataManagementMapper.getPurchaseMsgById(purchaseMsgId);
+            purchaseMsg1 = dataManagementMapper.getPurchaseMsgById(Integer.valueOf(purchaseMsgId));
             // update PurchaseMsg cache
             DMJedisUtil.updatePurchaseMsg(purchaseMsg1);
+            // 更新库存
+            // 获取该库存
+            InventoryMsg inventoryMsg= dataManagementMapper.getInventoryMsgByEquipmentMsgIdAndUserId(purchaseMsg1.getEquipmentMsgId(), purchaseMsg1.getConsigneeUserId());
+            if (inventoryMsg == null){
+                throw new RuntimeException("");
+            }
+            InventoryMsg inventoryMsg1 = new InventoryMsg();
+            inventoryMsg1.setId(inventoryMsg.getId());
+            inventoryMsg1.setInPurchase(-purchaseMsg1.getCount());
+            dataManagementMapper.updateInventoryMsg(inventoryMsg1);
+            DMJedisUtil.updateInventoryMsg(dataManagementMapper.getInventoryMsgById(inventoryMsg.getId()));
             return true;
         }
     }
@@ -604,8 +630,11 @@ public class DataManagementServiceImpl implements DataManagementService {
             if (!row.equals(1)) {
                 throw new RuntimeException("采购单据状态更改失败！");
             }
+            purchaseMsg1 = dataManagementMapper.getPurchaseMsgById(Integer.valueOf(purchaseMsgId));
             // 收货人 正常库存增加，采购中库存减少
+            InventoryMsg inventoryMsg1 = dataManagementMapper.getInventoryMsgByEquipmentMsgIdAndUserId(purchaseMsg1.getEquipmentMsgId(), purchaseMsg1.getConsigneeUserId());
             InventoryMsg inventoryMsg = new InventoryMsg();
+            inventoryMsg.setId(inventoryMsg1.getId());
             inventoryMsg.setThirdPartyTerraceId(Integer.valueOf(userId));
             inventoryMsg.setEquipmentMsgId(purchaseMsg.getEquipmentMsgId());
             inventoryMsg.setAwaitInstall(purchaseMsg.getCount());
@@ -615,10 +644,10 @@ public class DataManagementServiceImpl implements DataManagementService {
                 throw new RuntimeException("库存更新失败！");
             }
             // update PurchaseMsg cache
-            purchaseMsg1 = dataManagementMapper.getPurchaseMsgById(purchaseMsgId);
+            purchaseMsg1 = dataManagementMapper.getPurchaseMsgById(Integer.valueOf(purchaseMsgId));
             DMJedisUtil.updatePurchaseMsg(purchaseMsg1);
             // update InventoryMsg cache
-            inventoryMsg = dataManagementMapper.getInventoryMsgByEquipmentMsgIdAndUserId(purchaseMsg1.getEquipmentMsgId(), Integer.valueOf(userId));
+            inventoryMsg = dataManagementMapper.getInventoryMsgById(inventoryMsg1.getId());
             DMJedisUtil.updateInventoryMsg(inventoryMsg);
             return true;
 
@@ -629,10 +658,9 @@ public class DataManagementServiceImpl implements DataManagementService {
     public CheckIccidResult checkIccid(String iccid) throws RuntimeException {
         CheckIccidResult checkIccidResult = new CheckIccidResult();
         boolean b = IccidJedisUtil.checkIccid(iccid);
-        Integer row = dataManagementMapper.getIccid(iccid);
-        if (b) {
+        if (!b) {
             checkIccidResult.setResult(false);
-            checkIccidResult.setMessage("Iccid有误或已被占用,请检查checkIccid！");
+            checkIccidResult.setMessage("Iccid有误或已被占用,请检查Iccid！");
         } else {
             checkIccidResult.setResult(true);
         }

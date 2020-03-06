@@ -35,7 +35,7 @@ public class CityJedisUtil {
     public void init() {
         cityJedisUtil = this;
         cityJedisUtil.cityMapper = this.cityMapper;
-//        initialization();
+        initialization();
 
     }
 
@@ -230,6 +230,11 @@ public class CityJedisUtil {
         return set;
     }
 
+    /**
+     *
+     * @param user
+     * @return
+     */
     public static List<Province> getBeProvincesByUser(User user) {
         Set<Integer> ids = getUserProvinceIds(user);
         List<Province> provinces = getProvinceByIds(ids);

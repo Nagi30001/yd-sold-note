@@ -53,6 +53,7 @@ public class UserController {
             json.put("code", 20000);
             return json;
         } catch (RuntimeException e){
+            e.printStackTrace();
             json.put("code", 20001);
             json.put("message", e.getMessage());
             return json;
@@ -68,7 +69,7 @@ public class UserController {
     public JSONObject info(String token){
         JSONObject json = new JSONObject();
         try {
-            if (StringUtils.isEmpty(token)){
+            if (!StringUtils.isEmpty(token)){
                 List<String> roles = userService.getUserInfoByToken(token);
                 User user = userService.getUserByToken(token);
                 json.put("user",user);

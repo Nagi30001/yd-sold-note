@@ -66,7 +66,7 @@
             third_party_check_time = #{carReceipts.thirdPartyCheckTime},receipts_status = #{carReceipts.receiptsStatus}
             </if>
             <if test="type == 'gatheringCheck' and carReceipts.collectionTime != null ">
-                collection_time = #{carReceipts.collectionTime}}  ,receipts_status = #{carReceipts.receiptsStatus}
+                collection_time = #{carReceipts.collectionTime} ,receipts_status = #{carReceipts.receiptsStatus}
             </if>
         </set>
         where id = #{carReceipts.id}
@@ -209,5 +209,9 @@
         where id = #{s.id}
     </update>
 
+    <!--List<ImageUrl> getAllImageUrls();-->
+    <select id="getAllImageUrls" resultType="imageUrl">
+        select * from yd_sold_note.yd_receipts_image_url
+    </select>
 
 </mapper>

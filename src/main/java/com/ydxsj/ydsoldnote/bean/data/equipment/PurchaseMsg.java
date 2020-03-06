@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class PurchaseMsg {
+public class PurchaseMsg implements Comparable<PurchaseMsg>{
 
     private Integer id;
     private Integer purchaseUserId;
@@ -24,4 +24,9 @@ public class PurchaseMsg {
     private User purchaseUser;
     private User consigneeUser;
     private EquipmentMsg EquipmentMsg;
+
+    @Override
+    public int compareTo(PurchaseMsg o) {
+        return this.purchaseTime.compareTo(o.getPurchaseTime());
+    }
 }

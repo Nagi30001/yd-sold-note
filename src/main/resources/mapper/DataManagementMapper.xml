@@ -61,14 +61,14 @@
     </select>
 
     <!--  Integer updateChannel(@Param("channel") Channel channel1);  -->
-    <select id="updateChannel">
+    <update id="updateChannel" useGeneratedKeys="true">
         update yd_sold_note.yd_receipts_channel
         set province     = #{channel.province},
             city         = #{channel.city},
             channel_name = #{channel.channelName},
             site         = #{channel.site}
         where id = #{channel.id}
-    </select>
+    </update>
 
     <!--  List<EquipmentMsg> getEquipmentMsg();  -->
     <select id="getEquipmentMsg" resultType="equipmentMsg">
@@ -209,7 +209,7 @@
                 #{purchaseMsg.count}, #{purchaseMsg.purchaseTime}, #{purchaseMsg.status})
     </insert>
 
-    <!--PurchaseMsg getPurchaseMsgById(@Param("id") String id);-->
+    <!--PurchaseMsg getPurchaseMsgById(@Param("id") Integer id);-->
     <select id="getPurchaseMsgById" resultType="purchaseMsg">
         select *
         from yd_sold_note.yd_receipts_equipment_purchase_msg
@@ -260,12 +260,11 @@
                 await_receive = await_receive + #{inventoryMsg.awaitReceive}
             </if>
         </set>
-        where third_party_terrace_id = #{inventoryMsg.thirdPartyTerraceId} and equipment_msg_id =
-        #{inventoryMsg.equipmentMsgId}
+        where id = #{inventoryMsg.id}
     </update>
 
     <!--Integer insertInventoryMsg(@Param("inventoryMsg") InventoryMsg inventoryMsg);-->
-    <insert id="insertInventoryMsg">
+    <insert id="insertInventoryMsg" useGeneratedKeys="true" keyProperty="id">
         insert into yd_sold_note.yd_receipts_equipment_inventory
         (third_party_terrace_id, equipment_msg_id, await_install, in_purchase, in_maintain, in_inventory, await_receive)
         values (#{inventoryMsg.thirdPartyTerraceId}, #{inventoryMsg.equipmentMsgId}, #{inventoryMsg.awaitInstall},
@@ -273,12 +272,11 @@
                 #{inventoryMsg.inMaintain}, #{inventoryMsg.inInventory}, #{inventoryMsg.awaitReceive})
     </insert>
 
-    <!--Integer getIccid(@Param("iccid") String iccid);-->
-    <select id="getIccid" resultType="java.lang.Integer">
-        select count(*)
+    <!--Iccid getIccid(@Param("iccid") String iccid);-->
+    <select id="getIccid" resultType="iccid">
+        select *
         from yd_sold_note.yd_receipts_iccid
         where iccid like #{iccid}
-          and status = 1
     </select>
 
     <!--List<Iccid> getIccidsByStatus(@Param("status") int status);-->

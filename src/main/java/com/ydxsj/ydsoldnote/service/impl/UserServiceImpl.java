@@ -11,11 +11,13 @@ import com.ydxsj.ydsoldnote.service.UserService;
 import com.ydxsj.ydsoldnote.service.UserUtil;
 import com.ydxsj.ydsoldnote.util.JedisUtil.CityJedisUtil;
 import com.ydxsj.ydsoldnote.util.JedisUtil.UserJedisUtil;
+import com.ydxsj.ydsoldnote.util.PublicUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sun.net.www.ParseUtil;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -33,8 +35,8 @@ public class UserServiceImpl implements UserService {
     private UserUtil userUtil;
 
     private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-    //12小时后过期
-    private final static int EXPIRE = 3600 * 12 * 1000;
+    // 一周后后过期
+    private final static int EXPIRE = 3600 * 168 * 1000;
 
 
 
@@ -98,9 +100,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<User> getUsersByType(String token, String type) throws RuntimeException {
-//        List<String> provinces = userUtil.getProvinceByToken(token);
-
-//        User user = UserJedisUtil.getUserByToken(token);
+        List<User> userList = new ArrayList<>();
         Integer id  = UserJedisUtil.getUserIdByToken(token);
         if (id == null){
             throw  new RuntimeException("登陆失效");
@@ -113,7 +113,6 @@ public class UserServiceImpl implements UserService {
         List<Province> list = CityJedisUtil.getProvinceByIds(ids);
 //        List<String> provinces = userUtil.getProvinceByUser(user);
         if (type.equals("yd")) {
-            List<User> userList = new ArrayList<>();
             // 获取除 R1004 的用户
             List<User> r1001 = UserJedisUtil.getUserByRoleAndProvinces("R1001",list);
             List<User> r1002 = UserJedisUtil.getUserByRoleAndProvinces("R1002",list);
@@ -137,10 +136,8 @@ public class UserServiceImpl implements UserService {
 //                }
 //                user.setRoles(Arrays.asList(user.getRoleNum().split(",")));
 //            }
-//            System.err.println(users);
-            return userList;
         } else if (type.equals("pt")) {
-            List<User> r1004 = UserJedisUtil.getUserByRoleAndProvinces("R1004",list);
+            userList = UserJedisUtil.getUserByRoleAndProvinces("R1004",list);
 //            List<User> users = userMapper.getUsersByProvince(provinces, type);
 //            for (User user : users) {
 //                user.setUser(userMapper.selectUserById(user.getCreateUser()));
@@ -155,10 +152,18 @@ public class UserServiceImpl implements UserService {
 //                }
 //                user.setRoles(Arrays.asList(user.getRoleNum().split(",")));
 //            }
-            return r1004;
         } else {
             return null;
         }
+
+        for (User user1 : userList){
+            user1.setCreateTime(PublicUtil.timestampToString(user1.getCreateTime(),PublicUtil.SDF_YYYY_MM_DD));
+            user1.setBeProvinces((new ArrayList<>(CityJedisUtil.getUserProvinceIds(user1))));
+            if (user1.getCreateUser() != null){
+                user1.setUser(UserJedisUtil.getUserById(user1.getCreateUser()));
+            }
+        }
+        return userList;
     }
 
     @Override
@@ -193,7 +198,6 @@ public class UserServiceImpl implements UserService {
         User user = new User();
         //检查工号是否被占用
         Integer row = userMapper.selectUserCountByJobNum(Integer.parseInt(jobNum));
-        System.err.println(row);
         if (row > 0) {
             return null;
         }

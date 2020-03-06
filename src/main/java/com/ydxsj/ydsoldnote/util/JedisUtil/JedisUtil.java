@@ -8,7 +8,7 @@ public class JedisUtil {
     public static String REDIS_HOST;
     public static Integer REDIS_PORT;
     public static String REDIS_PASSWORD;
-    public static JedisPoolUtil jedisPoolUtil = new JedisPoolUtil();
+    public static JedisPoolUtil jedisPoolUtil = new JedisPoolUtil("localhost",6379,"");
 
 
     static {

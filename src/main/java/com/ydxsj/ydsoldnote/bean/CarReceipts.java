@@ -1,6 +1,7 @@
 package com.ydxsj.ydsoldnote.bean;
 
 
+import com.ydxsj.ydsoldnote.bean.data.Addition;
 import com.ydxsj.ydsoldnote.bean.data.TimeMsg;
 import com.ydxsj.ydsoldnote.bean.user.User;
 import lombok.AllArgsConstructor;
@@ -62,4 +63,5 @@ public class CarReceipts {
     private List<TimeMsg> timeMsgs;
     // 收款图片地址集合
     private List<String> imageUrls;
+    private List<Addition> additions;
 }

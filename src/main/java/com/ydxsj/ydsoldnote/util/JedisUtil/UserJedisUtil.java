@@ -13,10 +13,7 @@ import org.springframework.stereotype.Component;
 import redis.clients.jedis.Jedis;
 
 import javax.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Component
 public class UserJedisUtil {
@@ -41,8 +38,6 @@ public class UserJedisUtil {
     }
 
 
-
-
     /**
      * @ PostConstruct该注解被用来修饰一个非静态的void（）方法。被@PostConstruct修饰的方法会在服务器加载Servlet的时候运行，并且只会被服务器执行一次。PostConstruct在构造函数之后执行，init（）方法之前执行。
      * 通常我们会是在Spring框架中使用到@PostConstruct注解 该注解的方法在整个Bean初始化中的执行顺序：  Constructor(构造方法) -> @Autowired(依赖注入) -> @PostConstruct(注释的方法)
@@ -51,13 +46,12 @@ public class UserJedisUtil {
     public void init() {
         userJedisUtil = this;
         userJedisUtil.userMapper = this.userMapper;
-        System.err.println(JedisUtil.REDIS_HOST);
-//        initializationRoleUser("R1001");
-//        initializationRoleUser("R1002");
-//        initializationRoleUser("R1003");
-//        initializationRoleUser("R1004");
-//        initializationRoleUser("R1005");
-//        initializationUser();
+        initializationRoleUser("R1001");
+        initializationRoleUser("R1002");
+        initializationRoleUser("R1003");
+        initializationRoleUser("R1004");
+        initializationRoleUser("R1005");
+        initializationUser();
 
     }
 
@@ -65,7 +59,6 @@ public class UserJedisUtil {
      * 初始化信息（角色）
      */
     public static void initializationRoleUser(String role) {
-        System.err.println(JedisUtil.REDIS_HOST);
         Jedis jedis = null;
         try {
             jedis = JedisUtil.jedisPoolUtil.borrowJedis();
@@ -75,7 +68,7 @@ public class UserJedisUtil {
             for (User user : users) {
                 jedis.sadd(USER_ROLE_NUM + role, user.getId() + "");
             }
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -93,21 +86,10 @@ public class UserJedisUtil {
             jedis.select(1);
             List<User> users = userJedisUtil.userMapper.allUser();
             for (User user : users) {
-                // 姓名
-                addUserNameLike(user);
-                // 省份
-                jedis.sadd(USER_PROVINCE + user.getProvince(), user.getId() + "");
-                // 城市
-                jedis.sadd(USER_CITY + user.getCity(), user.getId() + "");
-                // 状态
-                if (user.getStatus() == 0) {
-                    jedis.sadd(USER_STATUS_INACTIVITY, user.getId() + "");
-                }
-                if (user.getStatus() == 1) {
-                    jedis.sadd(USER_STATUS_ACTIVITY, user.getId() + "");
-                }
+                addUser(user);
+
             }
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -129,8 +111,13 @@ public class UserJedisUtil {
             jedis.set(USER_ID + user.getId(), JSON.toJSONString(user));
             // 工号 ： user
             jedis.set(USER_JOB_NUM + user.getJobNum(), user.getId() + "");
-            // 状态 set
-            jedis.sadd(USER_STATUS_ACTIVITY, user.getId() + "");
+            // 状态
+            if (user.getStatus() == 0) {
+                jedis.sadd(USER_STATUS_INACTIVITY, user.getId() + "");
+            }
+            if (user.getStatus() == 1) {
+                jedis.sadd(USER_STATUS_ACTIVITY, user.getId() + "");
+            }
             // 姓名 ： 拆分到每个like中
             addUserNameLike(user);
             // 省份 : set
@@ -139,7 +126,7 @@ public class UserJedisUtil {
             jedis.sadd(USER_CITY + user.getCity(), user.getId() + "");
             // 角色 ：set
             jedis.sadd(USER_ROLE_NUM + user.getRoleNum(), user.getId() + "");
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -171,7 +158,7 @@ public class UserJedisUtil {
             deleteUserNameLike(oldUser);
             // 新增
             addUserNameLike(newUser);
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -179,9 +166,9 @@ public class UserJedisUtil {
 
     }
 
-    public static void deleteUserNameLike(User user){
+    public static void deleteUserNameLike(User user) {
         Jedis jedis = null;
-        try{
+        try {
             jedis = JedisUtil.jedisPoolUtil.borrowJedis();
             jedis.select(1);
             char[] nameChar = user.getUserName().toCharArray();
@@ -189,16 +176,16 @@ public class UserJedisUtil {
             for (int i = 0; i < nameChar.length; i++) {
                 jedis.srem(USER_NAME_LIKE + nameChar[i], user.getId() + "");
             }
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
         }
     }
 
-    public static void addUserNameLike(User user){
+    public static void addUserNameLike(User user) {
         Jedis jedis = null;
-        try{
+        try {
             jedis = JedisUtil.jedisPoolUtil.borrowJedis();
             jedis.select(1);
             char[] nameChar = user.getUserName().toCharArray();
@@ -206,14 +193,12 @@ public class UserJedisUtil {
             for (int i = 0; i < nameChar.length; i++) {
                 jedis.sadd(USER_NAME_LIKE + nameChar[i], user.getId() + "");
             }
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
         }
     }
-
-
 
 
     /**
@@ -229,7 +214,7 @@ public class UserJedisUtil {
             jedis.select(1);
             jedis.srem(USER_PROVINCE + oldUser.getProvince(), oldUser.getId() + "");
             jedis.sadd(USER_PROVINCE + newUser.getProvince(), newUser.getId() + "");
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -250,7 +235,7 @@ public class UserJedisUtil {
             jedis.select(1);
             jedis.srem(USER_CITY + oldUser.getCity(), oldUser.getId() + "");
             jedis.sadd(USER_CITY + newUser.getCity(), newUser.getId() + "");
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -271,7 +256,7 @@ public class UserJedisUtil {
             jedis.select(1);
             jedis.srem(USER_ROLE_NUM + oldUser.getRoleNum(), oldUser.getId() + "");
             jedis.sadd(USER_ROLE_NUM + newUser.getRoleNum(), newUser.getId() + "");
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -290,7 +275,7 @@ public class UserJedisUtil {
             jedis = JedisUtil.jedisPoolUtil.borrowJedis();
             jedis.select(1);
             jedis.set(USER_ID + user.getId(), JSON.toJSONString(user));
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -319,7 +304,8 @@ public class UserJedisUtil {
                 return user;
             }
             return user;
-        } catch (Exception e){
+        } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -339,8 +325,8 @@ public class UserJedisUtil {
             jedis.select(1);
             String id = jedis.get(USER_JOB_NUM + jobNum);
             return Integer.valueOf(id);
-        } catch (Exception e){
-            throw new RuntimeException("");
+        } catch (Exception e) {
+            throw new RuntimeException("#getUserByJobNum jedis");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
         }
@@ -360,7 +346,7 @@ public class UserJedisUtil {
             jedis.select(1);
             jedis.set(USER_TOKEN_ID + token, String.valueOf(id));
             jedis.expire(USER_TOKEN_ID + token, timeOut);
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -384,7 +370,7 @@ public class UserJedisUtil {
                 throw new RuntimeException("登陆失效，请重新登陆！");
             }
             return Integer.valueOf(id);
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -398,7 +384,7 @@ public class UserJedisUtil {
      * @return
      */
     public static User getUserByToken(String token) {
-        if (StringUtils.isEmpty(token)){
+        if (StringUtils.isEmpty(token)) {
             throw new RuntimeException("登录失效,请重新登录! #1");
         }
         Integer id = getUserIdByToken(token);
@@ -421,17 +407,18 @@ public class UserJedisUtil {
             List<User> users = new ArrayList<>();
             Set<String> list = jedis.smembers(USER_ROLE_NUM + role);
             for (String str : list) {
-                User user = JSON.parseObject(str, User.class);
+                User user = JSON.parseObject(jedis.get(USER_ID+str), User.class);
                 List<Integer> list2 = new ArrayList<>();
-                List<String> list1 = Arrays.asList(user.getBeProvince().split("-"));
-                for (String s : list1) {
-                    list2.add(Integer.valueOf(s));
+                List<Province> beProvincesByUser = CityJedisUtil.getBeProvincesByUser(user);
+                for (Province s : beProvincesByUser) {
+                    list2.add(Integer.valueOf(s.getId()));
                 }
                 user.setBeProvinces(list2);
                 users.add(user);
             }
             return users;
-        } catch (Exception e){
+        } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -458,7 +445,7 @@ public class UserJedisUtil {
                 users.add(getUserById(Integer.valueOf(id)));
             }
             return users;
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -486,7 +473,7 @@ public class UserJedisUtil {
                 }
             }
             return users;
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -529,7 +516,7 @@ public class UserJedisUtil {
             } else {
                 return roles;
             }
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -548,7 +535,7 @@ public class UserJedisUtil {
             jedis = JedisUtil.jedisPoolUtil.borrowJedis();
             jedis.select(1);
             return jedis.exists(USER_JOB_NUM + jobNum);
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
@@ -562,20 +549,60 @@ public class UserJedisUtil {
             jedis = JedisUtil.jedisPoolUtil.borrowJedis();
             jedis.select(1);
             List<User> userList = new ArrayList<>();
-            for (Province province : provinces){
+            for (Province province : provinces) {
                 Set<String> smembers = jedis.smembers(USER_PROVINCE + province.getProvince());
-                for (String s : smembers){
-                    userList.add(JSON.parseObject(jedis.get(USER_ID+s),User.class));
+                for (String s : smembers) {
+                    userList.add(getUserById(Integer.valueOf(s)));
                 }
             }
             return userList;
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);
         }
     }
 
+    /**
+     * 根据姓名拆分查交集
+     *
+     * @param sellName
+     * @return
+     */
+    public static List<User> getUserByNameLike(String sellName, List<Province> provinces) {
+        Jedis jedis = null;
+        try {
+            jedis = JedisUtil.jedisPoolUtil.borrowJedis();
+            jedis.select(1);
+            List<User> userList = new ArrayList<>();
+            List<String> strings = new ArrayList<>();
+            String[] chars = sellName.split("|");
+            for (Province province : provinces) {
+                if (chars.length == 1) {
+                    strings = (List<String>) CollectionUtils.union(strings,jedis.sinter(USER_NAME_LIKE + chars[0], USER_PROVINCE + province.getProvince()));
+                } else if (chars.length == 2) {
+                    strings = (List<String>) CollectionUtils.union(strings,jedis.sinter(USER_NAME_LIKE + chars[0], USER_NAME_LIKE + chars[1], USER_PROVINCE + province.getProvince()));
+                } else if (chars.length == 3) {
+                    strings = (List<String>) CollectionUtils.union(strings,jedis.sinter(USER_NAME_LIKE + chars[0], USER_NAME_LIKE + chars[1], USER_NAME_LIKE + chars[2],USER_PROVINCE + province.getProvince()));
+                } else if (chars.length == 4) {
+                    strings = (List<String>) CollectionUtils.union(strings,jedis.sinter(USER_NAME_LIKE + chars[0], USER_NAME_LIKE + chars[1], USER_NAME_LIKE + chars[2], USER_NAME_LIKE + chars[3], USER_PROVINCE + province.getProvince()));
+                } else if (chars.length == 5) {
+                    strings = (List<String>) CollectionUtils.union(strings,jedis.sinter(USER_NAME_LIKE + chars[0], USER_NAME_LIKE + chars[1], USER_NAME_LIKE + chars[2], USER_NAME_LIKE + chars[3], USER_NAME_LIKE + chars[4], USER_PROVINCE + province.getProvince()));
+                } else if (chars.length == 6) {
+                    strings = (List<String>) CollectionUtils.union(strings,jedis.sinter(USER_NAME_LIKE + chars[0], USER_NAME_LIKE + chars[1], USER_NAME_LIKE + chars[2], USER_NAME_LIKE + chars[3], USER_NAME_LIKE + chars[4], USER_NAME_LIKE + chars[5], USER_PROVINCE + province.getProvince()));
+                }
+            }
+            for (String s : strings) {
+                userList.add(getUserById(Integer.valueOf(s)));
+            }
+            return userList;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("");
+        } finally {
+            JedisUtil.jedisPoolUtil.returnJedis(jedis);
+        }
+    }
 
 
 }

@@ -21,7 +21,7 @@ public class QueryCRMsg {
     private String clientName;
     private String clientCarNum;
     private String checkTimeType;
-    private List<String> additionType;
+    private List<Integer> additionType;
     private String channel;
     private List<User> users;
     private List<String> provinces;

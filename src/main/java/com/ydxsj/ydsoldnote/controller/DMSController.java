@@ -179,6 +179,7 @@ public class DMSController {
             jsonObject.put("message", "用户信息失效");
             return jsonObject;
         }
+        System.out.println(user);
         // 安装平台
         if (PLATFORM_USER.equals(user.getRoleNum())) {
             // 获取库存信息
@@ -188,7 +189,7 @@ public class DMSController {
             // 获取更换信息
             List<ChangeMsg> changeMsg = dataManagementService.getChangeMsgByTPId(user, PLATFORM_ABBREVIATION);
             // 采购信息
-            List<PurchaseMsg> purchaseMsg = dataManagementService.getPurchaseMsg(user, YOUDAO_ABBREVIATION);
+            List<PurchaseMsg> purchaseMsg = dataManagementService.getPurchaseMsg(user, PLATFORM_ABBREVIATION);
             jsonObject.put("code", 20000);
             jsonObject.put("informationMsg", inventoryMsg);
             jsonObject.put("transferMsg", transferMsg);

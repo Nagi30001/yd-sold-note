@@ -26,11 +26,13 @@ public class IccidJedisUtil {
     private DataManagementMapper dataManagementMapper;
 
 
+
+
     @PostConstruct
     public void init() {
         iccidJedisUtil = this;
         iccidJedisUtil.dataManagementMapper = this.dataManagementMapper;
-//        initialization();
+        initialization();
     }
 
     // 初始化信息
@@ -41,13 +43,7 @@ public class IccidJedisUtil {
             jedis.select(4);
             List<Iccid> iccids = iccidJedisUtil.dataManagementMapper.getAllIccid();
             for (Iccid iccid : iccids) {
-                jedis.set(ICCID_ID + iccid.getId(), JSON.toJSONString(iccid));
-                jedis.set(ICCID_TOP_19 + getIccidTop19(iccid.getIccid()), iccid.getId() + "");
-                if (iccid.getStatus() == 0) {
-                    jedis.sadd(ICCID_INACTIVITY, iccid.getId() + "");
-                } else if (iccid.getStatus() == 1) {
-                    jedis.sadd(ICCID_ACTIVITY, iccid.getId() + "");
-                }
+                addIccid(iccid);
             }
         } catch (Exception e) {
             throw new RuntimeException("ICCID 初始化失败！");
@@ -56,8 +52,27 @@ public class IccidJedisUtil {
         }
     }
 
+    public static void addIccid(Iccid iccid){
+        Jedis jedis = null;
+        try {
+            jedis = JedisUtil.jedisPoolUtil.borrowJedis();
+            jedis.select(4);
+            jedis.set(ICCID_ID + iccid.getId(), JSON.toJSONString(iccid));
+            jedis.set(ICCID_TOP_19 + getIccidTop19(iccid.getIccid()), iccid.getId() + "");
+            if (iccid.getStatus() == 0) {
+                jedis.sadd(ICCID_INACTIVITY, iccid.getId() + "");
+            } else if (iccid.getStatus() == 1) {
+                jedis.sadd(ICCID_ACTIVITY, iccid.getId() + "");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("ICCID ##");
+        } finally {
+            JedisUtil.jedisPoolUtil.returnJedis(jedis);
+        }
+    }
 
-    public String getIccidTop19(String iccid) {
+    public static String getIccidTop19(String iccid) {
         StringBuilder newIccid = new StringBuilder();
         char[] chars = iccid.toCharArray();
         for (int i = 0; i < chars.length - 1; i++) {
@@ -65,6 +80,8 @@ public class IccidJedisUtil {
         }
         return String.valueOf(newIccid);
     }
+
+
 
     /**
      * 检查iccid是否可用
@@ -81,7 +98,12 @@ public class IccidJedisUtil {
             if (StringUtils.isEmpty(s)) {
                 return false;
             }
-            return true;
+            Iccid iccid1 = JSON.parseObject(jedis.get(ICCID_ID + s), Iccid.class);
+            if (iccid1.getStatus() == 1){
+                return true;
+            } else {
+                return false;
+            }
         } catch (Exception e) {
             throw new RuntimeException("ICCID ##");
         } finally {
@@ -125,6 +147,64 @@ public class IccidJedisUtil {
             jedis.select(4);
             return JSON.parseObject(jedis.get(ICCID_ID + id), Iccid.class);
         } catch (Exception e) {
+            throw new RuntimeException("ICCID ##");
+        } finally {
+            JedisUtil.jedisPoolUtil.returnJedis(jedis);
+        }
+    }
+
+    public static Iccid getIccidByTop19(String iccid) {
+        Jedis jedis = null;
+        try {
+            jedis = JedisUtil.jedisPoolUtil.borrowJedis();
+            jedis.select(4);
+            return getIccidById(jedis.get(ICCID_TOP_19 + iccid));
+        } catch (Exception e) {
+            throw new RuntimeException("ICCID ##");
+        } finally {
+            JedisUtil.jedisPoolUtil.returnJedis(jedis);
+        }
+    }
+
+    /**
+     * 更新iccid
+     * @param iccid1
+     */
+    public static void updateIccid(Iccid iccid1) {
+        deleteIccidStatus(iccid1);
+        addIccid(iccid1);
+
+    }
+
+    public static void addIccidStatus(Iccid iccid){
+        Jedis jedis = null;
+        try {
+            jedis = JedisUtil.jedisPoolUtil.borrowJedis();
+            jedis.select(4);
+            if (iccid.getStatus() == 0){
+                jedis.sadd(ICCID_ACTIVITY,iccid.getId()+"");
+            } else if (iccid.getStatus() == 1){
+                jedis.sadd(ICCID_INACTIVITY,iccid.getId()+"");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("ICCID ##");
+        } finally {
+            JedisUtil.jedisPoolUtil.returnJedis(jedis);
+        }
+    }
+
+    public static void deleteIccidStatus(Iccid iccid){
+        Jedis jedis = null;
+        try {
+            jedis = JedisUtil.jedisPoolUtil.borrowJedis();
+            jedis.select(4);
+            if (iccid.getStatus() == 0){
+                jedis.srem(ICCID_ACTIVITY,iccid.getId()+"");
+            } else if (iccid.getStatus() == 1){
+                jedis.srem(ICCID_INACTIVITY,iccid.getId()+"");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException("ICCID ##");
         } finally {
             JedisUtil.jedisPoolUtil.returnJedis(jedis);

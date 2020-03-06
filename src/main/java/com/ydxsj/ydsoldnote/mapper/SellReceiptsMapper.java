@@ -149,4 +149,10 @@ public interface SellReceiptsMapper {
      * @return
      */
     List<CarReceipts> searchCarReceipts(@Param("queryCRMsg") QueryCRMsg queryCRMsg);
+
+    /**
+     * 获取全部图片地址
+     * @return
+     */
+    List<ImageUrl> getAllImageUrls();
 }

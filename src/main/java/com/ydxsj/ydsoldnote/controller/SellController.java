@@ -38,36 +38,39 @@ public class SellController {
     public JSONObject getReceipts(@RequestBody Map map ) {
         System.err.println(map);
         JSONObject jsonObject = new JSONObject();
+        String page = String.valueOf(map.get("page"));
         // 用户信息
         User user = null;
         try {
             user = userService.getUserById(Integer.valueOf(String.valueOf(map.get("userId"))));
-            // 城市信息
-            List<Province> citys = userService.getCitys(user);
-            // 车型信息
-            List<CarType> carType = dataManagementService.getCarType();
-            // 平台信息
-            List<User> users = userService.getUserByRole("R1004");
-            // 销售类型
-            List<SellType> sellTypes = dataManagementService.getSellTypes();
-            // 附加业务
-            List<Addition> additions = dataManagementService.getAdditions();
+            if (page.equals("0")){
+                // 城市信息
+                List<Province> citys = userService.getCitys(user);
+                // 车型信息
+                List<CarType> carType = dataManagementService.getCarType();
+                // 平台信息
+                List<User> users = userService.getUserByRole("R1004");
+                // 销售类型
+                List<SellType> sellTypes = dataManagementService.getSellTypes();
+                // 附加业务
+                List<Addition> additions = dataManagementService.getAdditions();
+                // 获取该角色区域权限内的渠道信息
+                List<Channel> channels = dataManagementService.getChangeByUser(user);
+                jsonObject.put("user", user);
+                jsonObject.put("citys", citys);
+                jsonObject.put("carType", carType);
+                jsonObject.put("thirdPartyMsg", users);
+                jsonObject.put("sellType", sellTypes);
+                jsonObject.put("additionType", additions);
+                jsonObject.put("channel",channels);
+            }
             // 全部单据列表(该角色所属地区的报单数据)
             List<CarReceipts> carReceipts = sellReceiptsService.getCarReceipts(user,map);
-            // 获取该角色区域权限内的渠道信息
-            List<Channel> channels = dataManagementService.getChangeByUser(user);
-            System.err.println(1);
-            jsonObject.put("user", user);
-            jsonObject.put("citys", citys);
-            jsonObject.put("carType", carType);
-            jsonObject.put("thirdPartyMsg", users);
-            jsonObject.put("sellType", sellTypes);
-            jsonObject.put("additionType", additions);
             jsonObject.put("receipts", carReceipts);
-            jsonObject.put("channel",channels);
             jsonObject.put("code", 20000);
             return jsonObject;
         } catch (Exception e) {
+            e.printStackTrace();
             jsonObject.put("message", "账号已失效,请重新登陆");
             jsonObject.put("code", 50014);
             return jsonObject;
@@ -113,7 +116,7 @@ public class SellController {
         System.err.println("roles"+roles);
 
         // 判断是优道管理 还是平台用户
-        if (roles.contains("R1001") || roles.contains("R1002") || roles.contains("R1003"))  {
+        if (roles.contains("R1001") || roles.contains("R1002") || roles.contains("R1003") || roles.contains("R1005"))  {
             //优道管理
             //获取收款待确认信息
             List<CarReceipts> carReceipts = sellReceiptsService.getReceiptsByGathering(user);
@@ -130,7 +133,7 @@ public class SellController {
             List<CarReceipts> carReceipts2 = sellReceiptsService.getReceiptsByGathering(user);
             //获取安装待确认信息
             List<CarReceipts> carReceipts3 = sellReceiptsService.getReceiptsByInstall(user);
-            // 获取设备信息
+            // 获取设备库存信息（可用>0）
             List<InventoryMsg> inventoryMsg = dataManagementService.getInventoryMsgByTPId(user,"PT");
             // 获取iccid
             List<Iccid> iccids = dataManagementService.getIccidsByStatus(1);

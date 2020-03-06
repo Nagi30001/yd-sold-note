@@ -223,7 +223,7 @@ public interface DataManagementMapper {
      * @param id
      * @return
      */
-    PurchaseMsg getPurchaseMsgById(@Param("id") String id);
+    PurchaseMsg getPurchaseMsgById(@Param("id") Integer id);
 
     /**
      * 更新采购单据状态
@@ -263,7 +263,7 @@ public interface DataManagementMapper {
      * @param iccid
      * @return
      */
-    Integer getIccid(@Param("iccid") String iccid);
+    Iccid getIccid(@Param("iccid") String iccid);
 
     /**
      * 根据状态获取对应的iccid数据
